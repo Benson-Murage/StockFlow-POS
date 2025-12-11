@@ -274,6 +274,8 @@ class SettingController extends Controller
                 'cart_first_focus' => $request->input('cart_first_focus'),
                 'enable_unit_discount' => $request->input('enable_unit_discount'),
                 'enable_flat_item_discount' => $request->input('enable_flat_item_discount'),
+                'mpesa_enabled' => $request->input('mpesa_enabled', 'off'),
+                'scan_mode' => $request->input('scan_mode', 'off'),
             ];
             $settingsData['misc_settings'] = json_encode($miscSettings);
         } 

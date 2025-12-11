@@ -4,17 +4,20 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->unsignedBigInteger('deleted_by')->nullable()->after('created_by');
-            $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
-        });
+        if (Schema::hasTable('sales') && !Schema::hasColumn('sales', 'deleted_by')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->unsignedBigInteger('deleted_by')->nullable()->after('created_by');
+                if (Schema::hasTable('users')) {
+                    $table->foreign('deleted_by')->references('id')->on('users')->onDelete('set null');
+                }
+            });
+        }
     }
 
     /**
@@ -22,9 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->dropForeign(['deleted_by']);
-            $table->dropColumn('deleted_by');
-        });
+        if (Schema::hasTable('sales') && Schema::hasColumn('sales', 'deleted_by')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->dropColumn('deleted_by');
+            });
+        }
     }
 };

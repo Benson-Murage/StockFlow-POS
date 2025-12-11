@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->json('cart_snapshot')->nullable()->after('payment_status');
-        });
+        if (Schema::hasTable('sales') && !Schema::hasColumn('sales', 'cart_snapshot')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->json('cart_snapshot')->nullable()->after('payment_status');
+            });
+        }
     }
 
     /**

@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('product_batches', function (Blueprint $table) {
-            $table->decimal('discount_percentage', 5, 2)->nullable()->after('discount');
-        });
+        if (Schema::hasTable('product_batches') && !Schema::hasColumn('product_batches', 'discount_percentage')) {
+            Schema::table('product_batches', function (Blueprint $table) {
+                $table->decimal('discount_percentage', 5, 2)->nullable()->after('discount');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('product_batches', function (Blueprint $table) {
-            $table->dropColumn('discount_percentage');
-        });
+        if (Schema::hasTable('product_batches') && Schema::hasColumn('product_batches', 'discount_percentage')) {
+            Schema::table('product_batches', function (Blueprint $table) {
+                $table->dropColumn('discount_percentage');
+            });
+        }
     }
 };

@@ -11,10 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->unsignedBigInteger('updated_by')->nullable()->after('created_by');
-            $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
-        });
+        if (Schema::hasTable('sales') && !Schema::hasColumn('sales', 'updated_by')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->unsignedBigInteger('updated_by')->nullable()->after('created_by');
+                if (Schema::hasTable('users')) {
+                    $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
+                }
+            });
+        }
     }
 
     /**
@@ -22,9 +26,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->dropForeign(['updated_by']);
-            $table->dropColumn('updated_by');
-        });
+        if (Schema::hasTable('sales') && Schema::hasColumn('sales', 'updated_by')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->dropColumn('updated_by');
+            });
+        }
     }
 };

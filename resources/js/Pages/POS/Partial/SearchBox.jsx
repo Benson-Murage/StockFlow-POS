@@ -16,6 +16,8 @@ import { SharedContext } from "@/Context/SharedContext";
 
 export default function SearchBox() {
     const return_sale = usePage().props.return_sale;
+    const miscSettings = usePage().props.misc_settings || {};
+    const scanModeEnabled = (miscSettings.scan_mode ?? 'off') === 'on';
     const { setCartItemModalOpen, setSelectedCartItem } = useContext(SharedContext);
 
     const { addToCart, cartState } = useCart();
@@ -36,7 +38,39 @@ export default function SearchBox() {
                     setOptions(response.data.products); // Set options with response products
                     setLoading(false);
 
-                    if (response.data.products.length === 1) {
+                    if (scanModeEnabled && response.data.products.length === 1) {
+                        // Auto-add on single match in scan mode
+                        const product = response.data.products;
+                        if (product[0].discount_percentage && Number(product[0].discount_percentage) !== 0) {
+                            const discount = (product[0].price * product[0].discount_percentage) / 100;
+                            product[0].discount = discount;
+                        }
+
+                        const existingProductIndex = _.findIndex(cartState, (item) =>
+                            item.id === product[0].id &&
+                            item.batch_number === product[0].batch_number &&
+                            !['custom', 'reload'].includes(item.product_type)
+                        );
+                        if (existingProductIndex !== -1) {
+                            product[0].quantity = cartState[existingProductIndex].quantity;
+                        } else {
+                            product[0].quantity = 1;
+                            addToCart(product[0]);
+                        }
+
+                        if (product[0].product_type === "reload") {
+                            const lastAddedIndex = cartState.length > 0 ? cartState.length : 0;
+                            product[0].cart_index = lastAddedIndex;
+                        }
+                        setSelectedCartItem(product[0]);
+                        setCartItemModalOpen(true);
+                        setQuery('');
+                        setInputValue('');
+                        setOptions([]);
+                        return;
+                    }
+
+                    if (response.data.products.length === 1 && !scanModeEnabled) {
                         const product = response.data.products;
                         if (product[0].discount_percentage && Number(product[0].discount_percentage) !== 0) {
                             const discount = (product[0].price * product[0].discount_percentage) / 100;
@@ -83,10 +117,18 @@ export default function SearchBox() {
         if (searchRef.current) {
             searchRef.current.focus();
         }
+        const keepFocus = (e) => {
+            if (!scanModeEnabled) return;
+            if (searchRef.current) {
+                searchRef.current.focus();
+            }
+        };
+        document.addEventListener('keydown', keepFocus, true);
         return () => {
+            document.removeEventListener('keydown', keepFocus, true);
             debouncedFetchProducts.cancel(); // Cleanup: Cancel pending debounced calls
         };
-    }, [debouncedFetchProducts]);
+    }, [debouncedFetchProducts, scanModeEnabled]);
 
     const onSearchInputChange = (e) => {
         const input = e.target.value;

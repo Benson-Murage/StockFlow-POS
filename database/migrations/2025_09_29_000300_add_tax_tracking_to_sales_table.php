@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->decimal('total_charge_amount', 12, 2)->default(0)->after('total_amount')->comment('Sum of all charges (taxes, fees, etc)');
-
-            $table->index('total_charge_amount');
-        });
+        if (Schema::hasTable('sales') && !Schema::hasColumn('sales', 'total_charge_amount')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->decimal('total_charge_amount', 12, 2)->default(0)->after('total_amount')->comment('Sum of all charges (taxes, fees, etc)');
+                $table->index('total_charge_amount');
+            });
+        }
     }
 
     /**

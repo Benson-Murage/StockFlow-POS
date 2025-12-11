@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sales', function (Blueprint $table) {
-            $table->time('sale_time')->nullable()->after('sale_date')->index();
-        });
+        if (Schema::hasTable('sales') && !Schema::hasColumn('sales', 'sale_time')) {
+            Schema::table('sales', function (Blueprint $table) {
+                $table->time('sale_time')->nullable()->after('sale_date')->index();
+            });
+        }
     }
 
     /**

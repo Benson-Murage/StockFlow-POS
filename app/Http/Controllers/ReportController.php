@@ -515,9 +515,11 @@ class ReportController extends Controller
 
         $report['total_discount'] = $sale_items->total_discount + $sales->sale_discount;
         $report['total_expenses'] = Expense::StoreId($store_id)->DateFilter($start_date, $end_date)->sum('amount');
-        $report['cash_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->where('payment_method', 'cash')->where('amount', '>=', 0)->sum('amount');
-        $report['cash_refund'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->where('payment_method', 'cash')->where('amount', '<', 0)->sum('amount');
-        $report['cash_purchase'] = PurchaseTransaction::StoreId($store_id)->DateFilter($start_date, $end_date)->where('payment_method', 'cash')->sum('amount');
+        $report['cash_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['cash', 'Cash'])->where('amount', '>=', 0)->sum('amount');
+        $report['cash_refund'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['cash', 'Cash'])->where('amount', '<', 0)->sum('amount');
+        $report['cash_purchase'] = PurchaseTransaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['cash', 'Cash'])->sum('amount');
+        $report['mpesa_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['MPesa', 'Mpesa', 'mpesa'])->where('amount', '>=', 0)->sum('amount');
+        $report['mpesa_refund'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['MPesa', 'Mpesa', 'mpesa'])->where('amount', '<', 0)->sum('amount');
         $report['salary_expense'] = SalaryRecord::StoreId($store_id)->DateFilter($start_date, $end_date)->sum('net_salary');
         $report['total_expenses'] += $report['salary_expense'];
         return Inertia::render('Report/SummaryReport', [

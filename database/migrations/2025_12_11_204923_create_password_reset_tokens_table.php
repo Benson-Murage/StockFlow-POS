@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('sale_items', function (Blueprint $table) {
-            $table->boolean('is_free')->default(false)->after('quantity');
-            $table->json('meta_data')->nullable()->after('discount');
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
         });
     }
 
@@ -22,8 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('sale_items', function (Blueprint $table) {
-            $table->dropColumn(['is_free', 'meta_data']);
-        });
+        Schema::dropIfExists('password_reset_tokens');
     }
 };

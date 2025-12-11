@@ -8,16 +8,18 @@ const MiscSetting = ({ handleSubmit, settingFormData, handleChange, setSettingFo
         if (!settings?.misc_settings) return;
         try {
             const parsedSettings = JSON.parse(settings.misc_settings);
-            setSettingFormData(prev => ({
-                ...prev,
-                optimize_image_width: parsedSettings.optimize_image_width,
-                optimize_image_size: parsedSettings.optimize_image_size,
-                cheque_alert: parsedSettings.cheque_alert,
-                product_alert: parsedSettings.product_alert,
-                cart_first_focus: parsedSettings.cart_first_focus ?? 'quantity',
-                enable_unit_discount: parsedSettings.enable_unit_discount ?? 'yes',
-                enable_flat_item_discount: parsedSettings.enable_flat_item_discount ?? 'no',
-            }));
+                setSettingFormData(prev => ({
+                    ...prev,
+                    optimize_image_width: parsedSettings.optimize_image_width,
+                    optimize_image_size: parsedSettings.optimize_image_size,
+                    cheque_alert: parsedSettings.cheque_alert,
+                    product_alert: parsedSettings.product_alert,
+                    cart_first_focus: parsedSettings.cart_first_focus ?? 'quantity',
+                    enable_unit_discount: parsedSettings.enable_unit_discount ?? 'yes',
+                    enable_flat_item_discount: parsedSettings.enable_flat_item_discount ?? 'no',
+                    mpesa_enabled: parsedSettings.mpesa_enabled ?? 'off',
+                    scan_mode: parsedSettings.scan_mode ?? 'off',
+                }));
         } catch (error) {
             console.error("Failed to parse misc settings:", error);
         }
@@ -139,6 +141,36 @@ const MiscSetting = ({ handleSubmit, settingFormData, handleChange, setSettingFo
                                     value={settingFormData.optimize_image_size}
                                     onChange={handleChange}
                                 />
+                            </Grid>
+                            <Grid size={6}>
+                                <TextField
+                                    fullWidth
+                                    variant="outlined"
+                                    label={"MPesa Payments"}
+                                    name="mpesa_enabled"
+                                    required
+                                    value={settingFormData.mpesa_enabled ?? 'off'}
+                                    onChange={handleChange}
+                                    select
+                                >
+                                    <MenuItem value="on">On</MenuItem>
+                                    <MenuItem value="off">Off</MenuItem>
+                                </TextField>
+                            </Grid>
+                            <Grid size={6}>
+                                <TextField
+                                    fullWidth
+                                    variant="outlined"
+                                    label={"POS Scan Mode (Barcode First Focus)"}
+                                    name="scan_mode"
+                                    required
+                                    value={settingFormData.scan_mode ?? 'off'}
+                                    onChange={handleChange}
+                                    select
+                                >
+                                    <MenuItem value="on">On</MenuItem>
+                                    <MenuItem value="off">Off</MenuItem>
+                                </TextField>
                             </Grid>
                         </Grid>
                     </Paper>

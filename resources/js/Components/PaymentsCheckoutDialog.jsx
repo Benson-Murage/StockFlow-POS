@@ -11,6 +11,7 @@ import {
     Table, TableBody, TableRow, TableCell,
     FormControlLabel,
     Checkbox,
+    Tooltip,
 } from "@mui/material";
 import PrintReceiptModal from "@/Components/PrintReceiptModal";
 
@@ -21,6 +22,7 @@ import PauseCircleOutlineIcon from '@mui/icons-material/PauseCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCreditCard } from "@fortawesome/free-solid-svg-icons";
+import SmartphoneIcon from '@mui/icons-material/Smartphone';
 import InputAdornment from "@mui/material/InputAdornment";
 import { router } from "@inertiajs/react";
 import axios from "axios";
@@ -58,6 +60,9 @@ export default function PaymentsCheckoutDialog({
     const [payments, setPayments] = useState([])
     const [amountReceived, setAmountReceived] = useState(0)
     const [recalculatedCharges, setRecalculatedCharges] = useState(totalChargeAmount)
+    const [mpesaPhone, setMpesaPhone] = useState('')
+    const mpesaEnabled = usePage().props.mpesa_enabled ?? false;
+    const mpesaEnvConfigured = usePage().props.mpesa_env_configured ?? false;
 
     // Calculate reactive final total with discount
     const reactiveFinalTotal = (cartTotal - discount) + recalculatedCharges;
@@ -92,6 +97,7 @@ export default function PaymentsCheckoutDialog({
         setPayments([])
         setAmountReceived(0)
         setContextDiscount(0)
+        setMpesaPhone('')
         setOpen(false);
     };
 
@@ -163,10 +169,11 @@ export default function PaymentsCheckoutDialog({
                 emptyCart(); //Clear the cart from the Context API
                 setContextDiscount(0);
                 setPayments([])
+                setMpesaPhone('')
                 if (!is_sale) {
                     router.visit("/purchases");
                 } else {
-                    if (openPrintDialog && resp.data.receipt) {
+                    if (!resp.data?.mpesa_pending && openPrintDialog && resp.data.receipt) {
                         setReceiptData(resp.data.receipt);
                         setShowPrintModal(true);
                     } else {
@@ -204,7 +211,16 @@ export default function PaymentsCheckoutDialog({
             alert('Payment cannot be exceeded the total amount')
         }
         else if (amount) {
-            const newPayment = { payment_method: paymentMethod, amount: parseFloat(amount) };
+            if (paymentMethod === 'MPesa' && !mpesaPhone) {
+                alert('Please enter a phone number for MPesa.');
+                return;
+            }
+
+            const newPayment = {
+                payment_method: paymentMethod,
+                amount: parseFloat(amount),
+                ...(paymentMethod === 'MPesa' ? { phone: mpesaPhone } : {})
+            };
             setPayments([...payments, newPayment]);
             const newBalance = netTotal - balance;
             setAmount(newBalance > 0 ? newBalance : 0);
@@ -410,6 +426,23 @@ export default function PaymentsCheckoutDialog({
                                         CARD
                                     </Button>
                                 </Grid>
+                                {mpesaEnabled && mpesaEnvConfigured && (
+                                    <Grid size={{xs:6,sm:4}}>
+                                        <Tooltip title="Send an MPesa STK push to the entered phone number">
+                                            <Button
+                                                fullWidth
+                                                component="label"
+                                                role={undefined}
+                                                variant="contained"
+                                                startIcon={<SmartphoneIcon />}
+                                                onClick={() => addPayment('MPesa')}
+                                                color="primary"
+                                            >
+                                                MPESA
+                                            </Button>
+                                        </Tooltip>
+                                    </Grid>
+                                )}
                             </Grid>
                         </Grid>
                     </Grid>
@@ -420,12 +453,15 @@ export default function PaymentsCheckoutDialog({
                         <TableBody>
                             {payments.map((payment, index) => (
                                 <TableRow key={index}>
-                                    {/* Display Payment Method Icon */}
                                     <TableCell sx={{ padding: '5px 16px' }}>
                                         {payment.payment_method === 'Cash' && <PaymentsIcon />}
                                         {payment.payment_method === 'Cheque' && <CreditCardIcon />}
                                         {payment.payment_method === 'Credit' && <PauseCircleOutlineIcon />}
+                                        {payment.payment_method === 'MPesa' && <SmartphoneIcon />}
                                         <span className="ml-2"><strong>{payment.payment_method}</strong></span>
+                                        {payment.payment_method === 'MPesa' && payment.phone && (
+                                            <div style={{ fontSize: '0.85rem', color: '#555' }}>Phone: {payment.phone}</div>
+                                        )}
                                     </TableCell>
 
                                     {/* Display Payment Amount */}
@@ -466,6 +502,19 @@ export default function PaymentsCheckoutDialog({
                         sx={{ mt: "1rem" }}
                         size="large"
                     />
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            label={"MPesa Phone (e.g., 2547XXXXXX)"}
+                            name="mpesa_phone"
+                            value={mpesaPhone}
+                            onChange={(e) => setMpesaPhone(e.target.value)}
+                            sx={{ mt: "1rem" }}
+                            size="large"
+                            slotProps={{
+                                inputLabel: { shrink: true },
+                            }}
+                        />
                 </DialogContent>
                 <DialogActions>
                     <Button

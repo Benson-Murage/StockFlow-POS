@@ -6,8 +6,9 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Head, Link, useForm } from '@inertiajs/react';
-import stockflowLogo from '/public/stockflowpos-logo.png';
-import stockflowIcon from '/public/stockflowpos-icon.png';
+// Import images from resources (Vite will process them)
+import stockflowLogo from '../../StockFlowPOS-logo.png';
+import stockflowIcon from '../../StockFlowPOS-icon.png';
 
 export default function Login({ status, canResetPassword, version }) {
     const { data, setData, post, processing, errors, reset } = useForm({

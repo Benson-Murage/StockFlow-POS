@@ -87,7 +87,9 @@ class DatabaseSeeder extends Seeder
             'pos'
         ];
         $userRole->givePermissionTo($userPermissions);
-        
+        // Cleanup before inserting (idempotent seeding)
+        User::where('user_name', 'master')->delete();
+        User::where('user_name', 'admin')->delete();
         $superAdmin=User::create([
             'name' => 'Admin',
             'user_name'=>'master',
@@ -97,7 +99,6 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('superadmin'),
         ]);
         $superAdmin->assignRole($superAdminRole);
-
         $admin=User::create([
             'name' => 'Admin',
             'user_name'=>'admin',

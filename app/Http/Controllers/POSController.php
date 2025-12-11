@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CashLog;
 use App\Models\Collection;
+use App\Models\MpesaPayment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Sale;
@@ -27,6 +28,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Mail;
 use App\Models\Charge;
+use App\Services\MpesaService;
 
 class POSController extends Controller
 {
@@ -143,6 +145,8 @@ class POSController extends Controller
         $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
         $miscSettings = json_decode($miscSettings->meta_value, true);
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
+        $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
+        $mpesaConfigured = !empty(config('mpesa.consumer_key')) && !empty(config('mpesa.consumer_secret')) && !empty(config('mpesa.shortcode')) && !empty(config('mpesa.passkey'));
 
         // Get default charges
         $defaultCharges = Charge::where('is_active', true)
@@ -172,7 +176,9 @@ class POSController extends Controller
             'all_collections' => $allCollections,
             'cart_first_focus' => $cart_first_focus,
             'misc_settings' => $miscSettings,
-            'default_charges' => $defaultCharges
+            'default_charges' => $defaultCharges,
+            'mpesa_enabled' => $mpesaEnabled && $mpesaConfigured,
+            'mpesa_env_configured' => $mpesaConfigured,
         ]);
     }
 
@@ -188,6 +194,8 @@ class POSController extends Controller
         $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
         $miscSettings = json_decode($miscSettings->meta_value, true);
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
+        $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
+        $mpesaConfigured = !empty(config('mpesa.consumer_key')) && !empty(config('mpesa.consumer_secret')) && !empty(config('mpesa.shortcode')) && !empty(config('mpesa.passkey'));
 
         // Get charges from the sale's sale_items
         $defaultCharges = SaleItem::where('sale_id', $sale_id)
@@ -313,6 +321,8 @@ class POSController extends Controller
             'cart_first_focus' => $cart_first_focus,
             'misc_settings' => $miscSettings,
             'default_charges' => $defaultCharges,
+            'mpesa_enabled' => $mpesaEnabled && $mpesaConfigured,
+            'mpesa_env_configured' => $mpesaConfigured,
         ]);
     }
 
@@ -399,6 +409,7 @@ class POSController extends Controller
         $charges = $request->input('charges', []);
         $paymentMethod = $request->input('payment_method', 'none');
         $payments = $request->payments;
+        $mpesaPending = false;
 
         DB::beginTransaction();
         try {
@@ -429,8 +440,34 @@ class POSController extends Controller
                         'payment_method' => $payment['payment_method'],
                     ];
 
-                    // Check if the payment method is not 'Credit'
-                    if ($payment['payment_method'] != 'Credit') {
+                    if ($payment['payment_method'] === 'MPesa') {
+                        // Create MPesa payment intent and initiate STK push
+                        $phone = $payment['phone'] ?? null;
+                        if (empty($phone)) {
+                            throw new \InvalidArgumentException('MPesa phone number is required.');
+                        }
+
+                        $mpesaPayment = MpesaPayment::create([
+                            'sale_id' => $sale->id,
+                            'phone' => $phone,
+                            'amount' => $payment['amount'],
+                            'status' => 'pending',
+                        ]);
+
+                        $mpesaResponse = app(MpesaService::class)->initiateStkPush(
+                            (float) $payment['amount'],
+                            $phone,
+                            'SALE-' . $sale->id,
+                            'StockFlowPOS Sale'
+                        );
+
+                        $mpesaPayment->update([
+                            'merchant_request_id' => $mpesaResponse['MerchantRequestID'] ?? null,
+                            'checkout_request_id' => $mpesaResponse['CheckoutRequestID'] ?? null,
+                        ]);
+
+                        $mpesaPending = true;
+                    } elseif ($payment['payment_method'] != 'Credit') {
                         // Determine transaction type based on the payment method
                         if ($payment['payment_method'] == 'Account') {
                             // Set transaction type to 'account' for account payments
@@ -452,9 +489,12 @@ class POSController extends Controller
                     }
                 }
 
-                if ($amountReceived >= $total) {
+                if (! $mpesaPending && $amountReceived >= $total) {
                     $sale->payment_status = 'completed';
                     $sale->status = 'completed';
+                } elseif ($mpesaPending) {
+                    $sale->payment_status = 'pending_mpesa';
+                    $sale->status = 'pending';
                 }
 
                 $sale->amount_received = $amountReceived;
@@ -642,12 +682,15 @@ class POSController extends Controller
 
             DB::commit();
 
-            $receiptData = ReceiptDataService::getReceiptData($sale->id);
+            $receiptData = $mpesaPending ? null : ReceiptDataService::getReceiptData($sale->id);
 
             return response()->json([
-                'message' => 'Sale recorded successfully!',
+                'message' => $mpesaPending
+                    ? 'MPesa payment initiated. Awaiting confirmation.'
+                    : 'Sale recorded successfully!',
                 'sale_id' => $sale->id,
-                'receipt' => $receiptData
+                'receipt' => $receiptData,
+                'mpesa_pending' => $mpesaPending,
             ], 201);
         } catch (\Exception $e) {
             // Rollback transaction in case of error
