@@ -235,7 +235,7 @@ export default function BatchModal({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                                     },
                                 }}
                             />
@@ -260,7 +260,7 @@ export default function BatchModal({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                                         step: 0.5,
                                     },
                                 }}
@@ -285,7 +285,7 @@ export default function BatchModal({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                                         step: 0.5,
                                     },
                                 }}

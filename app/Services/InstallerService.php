@@ -170,7 +170,7 @@ class InstallerService
             }
 
             // ===== APPLICATION CONFIGURATION =====
-            $envContent = $this->setEnvValue($envContent, 'APP_NAME', $data['app_name'] ?? 'InfoShop');
+            $envContent = $this->setEnvValue($envContent, 'APP_NAME', $data['app_name'] ?? 'StockFlowPOS');
             $envContent = $this->setEnvValue($envContent, 'APP_URL', $data['app_url'] ?? 'http://localhost');
             $envContent = $this->setEnvValue($envContent, 'APP_TIMEZONE', $data['app_timezone'] ?? 'UTC');
 

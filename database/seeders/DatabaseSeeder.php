@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
         Store::create([
-            'name' => 'INFO SHOP',
+            'name' => 'StockFlowPOS',
             'address'=>'Your business address',
             'contact_number'=>'00000001',
             'sale_prefix'=>'IS',

@@ -16,6 +16,7 @@ import Paper from "@mui/material/Paper";
 import { Head } from "@inertiajs/react";
 
 import { SalesProvider, useSales as useCart } from "@/Context/SalesContext";
+import { useCurrencyFormatter } from '@/lib/currencyFormatter';
 
 const Item = styled(Paper)(({ theme }) => ({
     backgroundColor: "#fff",
@@ -31,6 +32,7 @@ const Item = styled(Paper)(({ theme }) => ({
 const CartComponent = () => {
     // Destructure cartState and addToCart from the context
     const { cartState, cartTotal } = useCart();
+    const formatCurrency = useCurrencyFormatter();
 
     return (
         <Box sx={{ padding: 3 }}>
@@ -49,7 +51,7 @@ const CartComponent = () => {
                             {item.name} | Qty.{item.quantity}
                         </Typography>
                         <Typography variant="h4" color="initial">
-                         <b>RS.{((item.price-item.discount) * item.quantity).toFixed(2)}</b>
+                         <b>{formatCurrency((item.price-item.discount) * item.quantity)}</b>
                         </Typography>
                     </Item>
                 ))}
@@ -58,7 +60,7 @@ const CartComponent = () => {
                         <strong>Total</strong>
                     </Typography>
                     <Typography variant="h4" color="initial">
-                    <strong>Rs.{(cartTotal).toFixed(2)}</strong>
+                    <strong>{formatCurrency(cartTotal)}</strong>
                     </Typography>
                 </Item>
             </Stack>

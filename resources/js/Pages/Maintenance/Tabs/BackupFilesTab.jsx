@@ -61,7 +61,7 @@ export default function BackupFilesTab() {
             const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
             const anchor = document.createElement("a");
             anchor.href = blobUrl;
-            anchor.download = `infoshop-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
+            anchor.download = `StockFlowPOS-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`;
             anchor.click();
             window.URL.revokeObjectURL(blobUrl);
             await fetchFiles();

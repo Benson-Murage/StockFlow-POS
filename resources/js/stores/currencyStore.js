@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 const defaultSettings = {
-    currency_symbol: 'Rs.',
-    currency_code: 'LKR',
+    currency_symbol: 'KSh',
+    currency_code: 'KES',
     symbol_position: 'before',
     decimal_separator: '.',
     thousands_separator: ',',

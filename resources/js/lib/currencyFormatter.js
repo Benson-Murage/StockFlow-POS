@@ -129,7 +129,7 @@ export const toNumeric = (value) => {
  * @returns {function} - formatCurrency function bound to store settings
  * Usage:
  *   const formatCurrency = useCurrencyFormatter();
- *   formatCurrency(1500)          // With currency symbol: Rs. 1,500.00
+ *   formatCurrency(1500)          // With currency symbol: KSh 1,500.00
  *   formatCurrency(1500, false)   // Plain number: 1,500.00
  */
 export const useCurrencyFormatter = () => {

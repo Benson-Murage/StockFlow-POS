@@ -16,7 +16,7 @@
 
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Application URL</label>
-            <input type="url" x-model="app_url" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://yourshop.com">
+            <input type="url" x-model="app_url" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://yourstore.com">
             <p class="mt-1 text-sm text-gray-500">The URL where your application will be accessible</p>
         </div>
 

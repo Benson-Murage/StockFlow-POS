@@ -32,6 +32,24 @@ use App\Services\MpesaService;
 
 class POSController extends Controller
 {
+    /**
+     * Check if MPesa is properly configured (not just non-empty, but also not dummy values)
+     */
+    private function isMpesaConfigured(): bool
+    {
+        $consumerKey = config('mpesa.consumer_key');
+        $consumerSecret = config('mpesa.consumer_secret');
+        $shortcode = config('mpesa.shortcode');
+        $passkey = config('mpesa.passkey');
+        
+        return !empty($consumerKey) && !empty($consumerSecret) && 
+               !empty($shortcode) && !empty($passkey) &&
+               !in_array($consumerKey, ['dummy_key', 'your_consumer_key_here']) &&
+               !in_array($consumerSecret, ['dummy_secret', 'your_consumer_secret_here']) &&
+               !in_array($shortcode, ['dummy_shortcode', 'your_shortcode_here']) &&
+               !in_array($passkey, ['dummy_passkey', 'your_passkey_here']);
+    }
+
     public function getProducts($filters = [])
     {
         $allProducts = $filters['all_products'] ?? false;
@@ -146,7 +164,7 @@ class POSController extends Controller
         $miscSettings = json_decode($miscSettings->meta_value, true);
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
         $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
-        $mpesaConfigured = !empty(config('mpesa.consumer_key')) && !empty(config('mpesa.consumer_secret')) && !empty(config('mpesa.shortcode')) && !empty(config('mpesa.passkey'));
+        $mpesaConfigured = $this->isMpesaConfigured();
 
         // Get default charges
         $defaultCharges = Charge::where('is_active', true)
@@ -195,7 +213,7 @@ class POSController extends Controller
         $miscSettings = json_decode($miscSettings->meta_value, true);
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
         $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
-        $mpesaConfigured = !empty(config('mpesa.consumer_key')) && !empty(config('mpesa.consumer_secret')) && !empty(config('mpesa.shortcode')) && !empty(config('mpesa.passkey'));
+        $mpesaConfigured = $this->isMpesaConfigured();
 
         // Get charges from the sale's sale_items
         $defaultCharges = SaleItem::where('sale_id', $sale_id)
@@ -241,6 +259,8 @@ class POSController extends Controller
         $miscSettings = Setting::where('meta_key', 'misc_settings')->first();
         $miscSettings = json_decode($miscSettings->meta_value, true);
         $cart_first_focus = $miscSettings['cart_first_focus'] ?? 'quantity';
+        $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
+        $mpesaConfigured = $this->isMpesaConfigured();
 
         if (!$currentStore) {
             return redirect()->route('store'); // Adjust the route name as necessary

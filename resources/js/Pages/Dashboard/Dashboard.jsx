@@ -24,6 +24,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import axios, { Axios } from "axios";
+import { useCurrencyFormatter } from '@/lib/currencyFormatter';
 import numeral from "numeral";
 
 import Summaries from "./Partials/Summaries";
@@ -36,6 +37,7 @@ import { DatabaseBackup } from "lucide-react";
 export default function Dashboard({ data, logo, version, store_name }) {
     const auth = usePage().props.auth.user;
     const modules = usePage().props.modules;
+    const formatCurrency = useCurrencyFormatter();
     const [startDate, setStartDate] = useState(dayjs().format("YYYY-MM-DD"));
     const [endDate, setEndDate] = useState(dayjs().format("YYYY-MM-DD"));
 
@@ -143,9 +145,9 @@ export default function Dashboard({ data, logo, version, store_name }) {
                                 <List>
                                     <Link href="/reports/sales">
                                         <ListItem
-                                            secondaryAction={numeral(
+                                            secondaryAction={formatCurrency(
                                                 total_sales
-                                            ).format("0,0.00")}
+                                            )}
                                         >
                                             <ListItemButton>
                                                 <ListItemIcon>
@@ -158,9 +160,9 @@ export default function Dashboard({ data, logo, version, store_name }) {
                                     <Divider />
                                     <Link href="/reports/dailycash">
                                         <ListItem
-                                            secondaryAction={numeral(
+                                            secondaryAction={formatCurrency(
                                                 cash_in
-                                            ).format("0,0.00")}
+                                            )}
                                         >
                                             <ListItemButton>
                                                 <ListItemIcon>
@@ -175,9 +177,9 @@ export default function Dashboard({ data, logo, version, store_name }) {
                                             <Divider />
                                             <Link href="#">
                                                 <ListItem
-                                                    secondaryAction={numeral(
+                                                    secondaryAction={formatCurrency(
                                                         inventory_purchase
-                                                    ).format("0,0.00")}
+                                                    )}
                                                 >
                                                     <ListItemButton>
                                                         <ListItemIcon>
@@ -192,9 +194,9 @@ export default function Dashboard({ data, logo, version, store_name }) {
                                     <Divider />
                                     <Link href="/expenses">
                                         <ListItem
-                                            secondaryAction={numeral(
+                                            secondaryAction={formatCurrency(
                                                 expenses
-                                            ).format("0,0.00")}
+                                            )}
                                         >
                                             <ListItemButton>
                                                 <ListItemIcon>
@@ -253,8 +255,8 @@ export default function Dashboard({ data, logo, version, store_name }) {
                                 alert("Wrong password!");
                             }
                         }}>
-                            <CloudUploadIcon />
-                        </IconButton>
+                        <CloudUploadIcon />
+                    </IconButton>
                     </Grid>
                     <Grid>
                         VERSION {version}

@@ -55,7 +55,7 @@ const BarcodeTemplateEditor = ({ settings }) => {
 
     const [sampleData, setSampleData] = useState({
         product_name: 'ABC Product - XYZ',
-        price: '1,000.00 Rs.',
+        price: '1,000.00 KSh',
         barcode_code: '8718719850268',
         store_name: 'Main Store',
         date: new Date().toLocaleDateString(),

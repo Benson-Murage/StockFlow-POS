@@ -2,7 +2,7 @@
 REM Create Update ZIP for InfoShop V2 using Git Archive
 REM Archives all required folders: app, routes, resources, config, database, lang, public
 REM Excludes: public/tinymce, public/vendor
-REM Usage: Run from infoshop project root directory
+REM Usage: Run from StockFlowPOS project root directory
 
 setlocal enabledelayedexpansion
 

@@ -61,8 +61,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'default_currency' => [
-        'currency_symbol' => 'Rs.',
-        'currency_code' => 'LKR',
+        'currency_symbol' => 'KSh',
+        'currency_code' => 'KES',
         'symbol_position' => 'before',
         'decimal_separator' => '.',
         'thousands_separator' => ',',
@@ -77,7 +77,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'default_settings' => [
-        'shop_logo' => 'infoshop-logo.png',
+        'shop_logo' => 'stockflowpos-logo.png',
         'sale_receipt_note' => 'Thank you for your business!',
         'sale_print_padding_right' => '35',
         'sale_print_padding_left' => '2',

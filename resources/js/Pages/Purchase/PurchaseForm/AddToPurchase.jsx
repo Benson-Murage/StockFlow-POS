@@ -167,7 +167,7 @@ export default function AddToPurchase({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                                     },
                                 }}
                             />
@@ -237,7 +237,7 @@ export default function AddToPurchase({
                                         shrink: true,
                                     },
                                     input: {
-                                        // startAdornment: <InputAdornment position="start">Rs.</InputAdornment>,
+                                        // startAdornment: <InputAdornment position="start">KSh</InputAdornment>,
                                     },
                                 }}
                             />

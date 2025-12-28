@@ -61,7 +61,7 @@ Route::match(['get', 'post'], '/automation/backup/run', [BackupController::class
     ->middleware('throttle:5,1')
     ->name('automation.backup');
 
-// Unified Sync API endpoints for offline-first InfoPOS app are now defined in routes/api.php
+// Unified Sync API endpoints for offline-first StockFlowPOS app are now defined in routes/api.php
 
 // Mobile Sales API - For hybrid loading (Firebase + Laravel)
 Route::post('/api/sales/exclude', [SaleController::class, 'getSalesExcluding'])->name('sales.exclude');

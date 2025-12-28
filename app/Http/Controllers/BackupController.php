@@ -133,7 +133,7 @@ class BackupController extends Controller
         }
 
         $timestamp = date('Y-m-d_H-i-s');
-        $zipFileName = 'infoshop-backup-' . $timestamp . '.zip';
+        $zipFileName = 'StockFlowPOS-backup-' . $timestamp . '.zip';
         $tmpZipPath = storage_path(Str::random(16) . '.zip');
         $sqlFileName = 'database-' . $timestamp . '.sql';
 

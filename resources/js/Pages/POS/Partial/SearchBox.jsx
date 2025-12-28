@@ -13,6 +13,7 @@ import _ from "lodash";
 
 import { useSales as useCart } from "@/Context/SalesContext";
 import { SharedContext } from "@/Context/SharedContext";
+import { useCurrencyFormatter } from '@/lib/currencyFormatter';
 
 export default function SearchBox() {
     const return_sale = usePage().props.return_sale;
@@ -21,6 +22,7 @@ export default function SearchBox() {
     const { setCartItemModalOpen, setSelectedCartItem } = useContext(SharedContext);
 
     const { addToCart, cartState } = useCart();
+    const formatCurrency = useCurrencyFormatter();
     const [loading, setLoading] = useState(false);
     const [search_query, setQuery] = useState("");
     const [options, setOptions] = useState([]);
@@ -183,7 +185,7 @@ export default function SearchBox() {
                     getOptionLabel={(option) =>
                         typeof option === "string"
                             ? option
-                            : `${option.name} | ${option.barcode} ${option.sku ? `| ${option.sku}` : ""} | ${option.batch_number} | Rs.${option.price}`
+                            : `${option.name} | ${option.barcode} ${option.sku ? `| ${option.sku}` : ""} | ${option.batch_number} | ${formatCurrency(option.price)}`
                     }
                     getOptionKey={(option) => option.id + option.batch_id}
                     onChange={(event, product) => {

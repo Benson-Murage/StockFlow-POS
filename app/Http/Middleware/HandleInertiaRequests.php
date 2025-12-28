@@ -54,12 +54,12 @@ class HandleInertiaRequests extends Middleware
             }
 
             $modules = Setting::getModules();
-            $shopName = $shopNameMeta->meta_value ?? 'InfoShop';
+            $shopName = $shopNameMeta->meta_value ?? 'StockFlowPOS';
         } catch (\Exception $e) {
             // If settings table doesn't exist, use defaults
             $currencySettings = [];
             $modules = [];
-            $shopName = 'InfoShop';
+            $shopName = 'StockFlowPOS';
         }
 
         return [
@@ -68,7 +68,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'settings'=>[
-                'shop_name'=> $shopName ?? 'InfoShop',
+                'shop_name'=> $shopName ?? 'StockFlowPOS',
                 'currency_settings'=>$currencySettings,
             ],
             'modules'=> $modules ?? [],

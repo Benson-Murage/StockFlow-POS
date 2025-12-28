@@ -16,12 +16,14 @@ import Paper from '@mui/material/Paper';
 
 import axios from "axios";
 import numeral from "numeral";
+import { useCurrencyFormatter } from '@/lib/currencyFormatter';
 
 export default function Summaries() {
     const [topSoldItems, setTopSoldItems] = useState([]);
     const [topProfitItems, setTopProfitItems] = useState([]);
     const [topGrossItems, setTopGrossItems] = useState([]);
     const [loading, setLoading] = useState(true);
+    const formatCurrency = useCurrencyFormatter();
 
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -131,7 +133,7 @@ export default function Summaries() {
                                     {topProfitItems.map((item) => (
                                         <TableRow key={item.product_name}>
                                             <TableCell component="th" scope="row">{item.product_name}</TableCell>
-                                            <TableCell align="right">{numeral(item.total_profit).format('0,0.00')}</TableCell>
+                                            <TableCell align="right">{formatCurrency(item.total_profit)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -151,7 +153,7 @@ export default function Summaries() {
                                     {topGrossItems.map((item) => (
                                         <TableRow key={item.product_name}>
                                             <TableCell component="th" scope="row">{item.product_name}</TableCell>
-                                            <TableCell align="right">{numeral(item.total_gross).format('0,0.00')}</TableCell>
+                                            <TableCell align="right">{formatCurrency(item.total_gross)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

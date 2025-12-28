@@ -8,7 +8,7 @@ git archive -o update.zip HEAD $(git diff --name-only HEAD^)
 #get the update files from the committed files
 git archive -o update.zip HEAD $(git diff --name-only abc123^ abc123)
 
-cd modules/infoshop
+cd modules/StockFlowPOS
 
 
 

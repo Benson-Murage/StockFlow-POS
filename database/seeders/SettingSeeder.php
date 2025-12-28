@@ -14,7 +14,7 @@ class SettingSeeder extends Seeder
     public function run(): void
     {
         $settings = [
-            ['meta_key' => 'shop_name', 'meta_value' => 'Info Shop'],
+            ['meta_key' => 'shop_name', 'meta_value' => 'StockFlowPOS'],
             ['meta_key' => 'shop_logo', 'meta_value' => 'oneshop-logo.png'],
             ['meta_key' => 'sale_receipt_note', 'meta_value' => 'Thank you'],
             ['meta_key' => 'sale_print_padding_right', 'meta_value' => '35'],
@@ -31,6 +31,8 @@ class SettingSeeder extends Seeder
                 'optimize_image_width' => '400',
                 'cheque_alert' => '2',
                 'product_alert' => '1',
+                'mpesa_enabled' => 'on',
+                'cart_first_focus' => 'quantity',
             ])],
             ['meta_key' => 'barcode_template', 'meta_value' => '<style>
                 .barcode-container {

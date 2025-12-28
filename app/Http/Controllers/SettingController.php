@@ -304,7 +304,7 @@ class SettingController extends Controller
         else if ($setting_type == 'loyalty_points_settings')
         {
             $loyaltyPointsSettings = [
-                'amount_per_point' => $request->input('amount_per_point'), // 50 Rs = 1 point
+                'amount_per_point' => $request->input('amount_per_point'), // 50 KSh = 1 point
                 'max_points_per_purchase' => $request->input('max_points_per_purchase'), // Max points per purchase
                 'points_expiration_days' => $request->input('points_expiration_days'), // Days before points expire
                 'min_points_for_redeem' => $request->input('min_points_for_redeem'), // Min points for redemption

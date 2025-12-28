@@ -24,6 +24,16 @@ class MpesaService
         $consumerKey = config('mpesa.consumer_key');
         $consumerSecret = config('mpesa.consumer_secret');
 
+        // Validate that credentials are not dummy values
+        if (empty($consumerKey) || empty($consumerSecret)) {
+            throw new RuntimeException('MPesa credentials are not configured. Please set MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET in your .env file.');
+        }
+
+        if (in_array($consumerKey, ['dummy_key', 'your_consumer_key_here']) || 
+            in_array($consumerSecret, ['dummy_secret', 'your_consumer_secret_here'])) {
+            throw new RuntimeException('MPesa credentials appear to be placeholder values. Please configure real Safaricom API credentials.');
+        }
+
         $response = Http::timeout(config('mpesa.request_timeout', 30))
             ->withBasicAuth($consumerKey, $consumerSecret)
             ->get($this->baseUrl . '/oauth/v1/generate', [
@@ -31,11 +41,29 @@ class MpesaService
             ]);
 
         if (! $response->successful()) {
-            Log::error('MPesa access token request failed', ['body' => $response->body()]);
-            throw new RuntimeException('Unable to obtain MPesa access token.');
+            Log::error('MPesa access token request failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'url' => $this->baseUrl . '/oauth/v1/generate'
+            ]);
+            
+            $errorMessage = 'Unable to obtain MPesa access token.';
+            if ($response->status() === 401) {
+                $errorMessage = 'MPesa authentication failed. Please check your consumer key and secret.';
+            } elseif ($response->status() === 403) {
+                $errorMessage = 'MPesa access forbidden. Please check your API permissions.';
+            }
+            
+            throw new RuntimeException($errorMessage);
         }
 
-        return $response->json()['access_token'] ?? '';
+        $responseData = $response->json();
+        if (!isset($responseData['access_token'])) {
+            Log::error('MPesa access token response missing access_token', ['response' => $responseData]);
+            throw new RuntimeException('Invalid response from MPesa API: access_token missing.');
+        }
+
+        return $responseData['access_token'];
     }
 
     public function initiateStkPush(float $amount, string $phone, string $reference, string $description = 'StockFlowPOS Payment'): array
@@ -44,6 +72,17 @@ class MpesaService
 
         $shortcode = config('mpesa.shortcode');
         $passkey = config('mpesa.passkey');
+        
+        // Validate shortcode and passkey
+        if (empty($shortcode) || empty($passkey)) {
+            throw new RuntimeException('MPesa shortcode or passkey is not configured. Please check your .env file.');
+        }
+        
+        if (in_array($shortcode, ['dummy_shortcode', 'your_shortcode_here']) || 
+            in_array($passkey, ['dummy_passkey', 'your_passkey_here'])) {
+            throw new RuntimeException('MPesa shortcode or passkey appear to be placeholder values. Please configure real Safaricom API credentials.');
+        }
+
         $timestamp = now()->format('YmdHis');
         $password = base64_encode($shortcode . $passkey . $timestamp);
         $callbackUrl = config('mpesa.callback_url');
@@ -96,4 +135,3 @@ class MpesaService
         return $digits;
     }
 }
-

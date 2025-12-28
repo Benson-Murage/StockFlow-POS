@@ -43,7 +43,7 @@ import ReceiptIcon from '@mui/icons-material/Receipt';
 import PermMediaIcon from '@mui/icons-material/PermMedia';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMoneyCheck, faFileInvoice, faBoxesStacked, faPercent } from "@fortawesome/free-solid-svg-icons";
-import infoshopLogo from "@/infoshop.png";
+import stockflowposLogo from "@/stockflowpos.png";
 const drawerWidth = 240;
 
 function AuthenticatedLayout({ header, children, ...props }) {
@@ -151,7 +151,7 @@ function AuthenticatedLayout({ header, children, ...props }) {
         <>
             <Toolbar sx={{ display: "flex", justifyContent: "center" }}>
                 <img
-                    src={infoshopLogo}
+                    src={stockflowposLogo}
                     style={{ objectFit: "contain", height: "100%" }}
                 ></img>
             </Toolbar>

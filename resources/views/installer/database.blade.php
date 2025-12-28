@@ -91,7 +91,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Database Name</label>
-                <input type="text" x-model="database" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="oneshop">
+                <input type="text" x-model="database" required class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="stockflowpos_db">
                 <p class="mt-1 text-sm text-gray-500">The database should already exist</p>
             </div>
 
