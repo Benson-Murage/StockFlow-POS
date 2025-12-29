@@ -1,0 +1,159 @@
+# Docker Compose configuration for StockFlowPOS local development
+# Compatible with Laravel Sail and optimized for React + Inertia.js development
+
+version: '3.8'
+
+services:
+  # ==============================================
+  # Laravel Application Service
+  # ==============================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: stockflowpos-app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+      - ./docker/local/supervisord.conf:/etc/supervisord.conf
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+      APP_ENV: local
+      APP_DEBUG: true
+      APP_KEY: base64:your-app-key-here
+      DB_HOST: mysql
+      DB_DATABASE: stockflowpos
+      DB_USERNAME: stockflowpos
+      DB_PASSWORD: password
+      REDIS_HOST: redis
+      QUEUE_CONNECTION: database
+      SESSION_DRIVER: database
+      CACHE_DRIVER: database
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - stockflowpos-network
+    ports:
+      - "8080:8080"
+      - "5173:5173" # Vite dev server
+    command: /bin/sh -c "composer install && npm install && php artisan migrate:fresh --seed && php artisan serve --host=0.0.0.0 --port=8000"
+
+  # ==============================================
+  # MySQL Database Service
+  # ==============================================
+  mysql:
+    image: mysql:8.0
+    container_name: stockflowpos-mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: stockflowpos
+      MYSQL_USER: stockflowpos
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - stockflowpos-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ==============================================
+  # Redis Cache Service
+  # ==============================================
+  redis:
+    image: redis:7-alpine
+    container_name: stockflowpos-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - stockflowpos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 3s
+      retries: 5
+
+  # ==============================================
+  # MailHog Email Testing Service
+  # ==============================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: stockflowpos-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP port
+      - "8025:8025" # Web UI port
+    networks:
+      - stockflowpos-network
+
+  # ==============================================
+  # PHPMyAdmin Service (Optional)
+  # ==============================================
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: stockflowpos-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: stockflowpos
+      PMA_PASSWORD: password
+      UPLOAD_LIMIT: 50M
+    depends_on:
+      - mysql
+    networks:
+      - stockflowpos-network
+
+  # ==============================================
+  # Development Build Service (for frontend)
+  # ==============================================
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: development
+    container_name: stockflowpos-frontend-dev
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    environment:
+      VITE_DEV_SERVER_URL: http://localhost:5173
+    networks:
+      - stockflowpos-network
+    ports:
+      - "5173:5173"
+    command: npm run dev
+
+# ==============================================
+# Named Volumes
+# ==============================================
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ==============================================
+# Network Configuration
+# ==============================================
+networks:
+  stockflowpos-network:
+    driver: bridge

@@ -6,7 +6,14 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "dev:all": "concurrently \"npm run dev\" \"php artisan serve\" --names \"VITE,LARAVEL\" --prefix-colors \"blue,magenta\""
+        "build:prod": "vite build --mode production",
+        "dev:all": "concurrently \"npm run dev\" \"php artisan serve\" --names \"VITE,LARAVEL\" --prefix-colors \"blue,magenta\"",
+        "docker:dev": "concurrently \"npm run dev\" \"php artisan serve --host=0.0.0.0 --port=8000\" --names \"VITE,LARAVEL\" --prefix-colors \"blue,magenta\"",
+        "docker:build": "npm ci --only=production && npm run build",
+        "docker:install": "npm ci",
+        "docker:clean": "npm cache clean --force",
+        "deploy:build": "npm run build:prod",
+        "preview": "vite preview"
     },
     "devDependencies": {
         "@headlessui/react": "^2.2.7",

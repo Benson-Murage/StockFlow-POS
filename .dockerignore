@@ -1,0 +1,159 @@
+# Docker ignore file for StockFlowPOS
+# Excludes unnecessary files from Docker build context
+
+# ==============================================
+# Version Control
+# ==============================================
+.git
+.gitignore
+.gitattributes
+
+# ==============================================
+# Docker files
+# ==============================================
+Dockerfile
+.dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# ==============================================
+# Environment files
+# ==============================================
+.env
+.env.local
+.env.production
+.env.staging
+.env.testing
+
+# ==============================================
+# IDE and editor files
+# ==============================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================================
+# OS generated files
+# ==============================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==============================================
+# Logs
+# ==============================================
+*.log
+logs/
+storage/logs/
+
+# ==============================================
+# Cache directories
+# ==============================================
+bootstrap/cache/*.php
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/tmp/
+node_modules/
+.npm
+.npm-cache/
+
+# ==============================================
+# Development files
+# ==============================================
+phpunit.xml
+phpunit.xml.dist
+phpcs.xml
+phpcs.xml.dist
+.php-cs-fixer.php
+.phpstorm.meta.php
+
+# ==============================================
+# Documentation
+# ==============================================
+README.md
+docs/
+*.md
+MANIFEST.md
+
+# ==============================================
+# Test files
+# ==============================================
+tests/
+test/
+Testing/
+
+# ==============================================
+# Database files
+# ==============================================
+*.sqlite
+*.sqlite3
+database.sql
+*.sql
+
+# ==============================================
+# Build artifacts
+# ==============================================
+public/build/
+build/
+dist/
+out/
+
+# ==============================================
+# Dependencies
+# ==============================================
+vendor/
+node_modules/
+bower_components/
+
+# ==============================================
+# Development tools
+# ==============================================
+.nyc_output/
+coverage/
+.parcel-cache/
+
+# ==============================================
+# Temporary files
+# ==============================================
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ==============================================
+# Package managers
+# ==============================================
+yarn.lock
+pnpm-lock.yaml
+package-lock.json
+
+# ==============================================
+# Deployment
+# ==============================================
+deploy.sh
+deploy.bat
+*.deployment
+
+# ==============================================
+# Backup files
+# ==============================================
+*.backup
+*.bak
+*.old
+
+# ==============================================
+# Misc
+# ==============================================
+*.tgz
+*.tar.gz
+.cache/
+.npmrc
+.eslintcache
+.stylelintcache

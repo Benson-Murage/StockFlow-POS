@@ -61,7 +61,26 @@
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan migrate --graceful --ansi"
-        ]
+        ],
+        "docker:install": "composer install --no-dev --optimize-autoloader",
+        "docker:dev": "composer install",
+        "docker:build": "composer install --no-dev --optimize-autoloader --no-interaction",
+        "deploy:setup": [
+            "@php artisan key:generate --force",
+            "@php artisan migrate --force",
+            "@php artisan config:cache",
+            "@php artisan route:cache",
+            "@php artisan view:cache",
+            "@php artisan optimize"
+        ],
+        "deploy:production": [
+            "@php artisan config:cache",
+            "@php artisan route:cache",
+            "@php artisan view:cache",
+            "@php artisan optimize"
+        ],
+        "queue:work": "php artisan queue:work --tries=3 --timeout=300",
+        "schedule:run": "php artisan schedule:run --verbose --no-interaction --schedule=1"
     },
     "extra": {
         "laravel": {

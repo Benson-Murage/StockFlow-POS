@@ -67,12 +67,39 @@ class PurchaseController extends Controller
     {
         $contacts = Contact::select('id', 'name', 'balance')->vendors()->get();
         $stores = Store::select('id', 'name')->get();
+        
+        // Get M-Pesa configuration
+        $miscSettings = \App\Models\Setting::where('meta_key', 'misc_settings')->first();
+        $miscSettings = json_decode($miscSettings->meta_value ?? '{}', true);
+        $mpesaEnabled = ($miscSettings['mpesa_enabled'] ?? 'off') === 'on';
+        $mpesaConfigured = $this->isMpesaConfigured();
+        
         return Inertia::render('Purchase/PurchaseForm/PurchaseForm', [
             'products' => [],
             'vendors' => $contacts,
             'stores' => $stores,
             'pageLabel' => 'New Purchase',
+            'mpesa_enabled' => $mpesaEnabled && $mpesaConfigured,
+            'mpesa_env_configured' => $mpesaConfigured,
         ]);
+    }
+    
+    /**
+     * Check if MPesa is properly configured (not just non-empty, but also not dummy values)
+     */
+    private function isMpesaConfigured(): bool
+    {
+        $consumerKey = config('mpesa.consumer_key');
+        $consumerSecret = config('mpesa.consumer_secret');
+        $shortcode = config('mpesa.shortcode');
+        $passkey = config('mpesa.passkey');
+        
+        return !empty($consumerKey) && !empty($consumerSecret) && 
+               !empty($shortcode) && !empty($passkey) &&
+               !in_array($consumerKey, ['dummy_key', 'your_consumer_key_here']) &&
+               !in_array($consumerSecret, ['dummy_secret', 'your_consumer_secret_here']) &&
+               !in_array($shortcode, ['dummy_shortcode', 'your_shortcode_here']) &&
+               !in_array($passkey, ['dummy_passkey', 'your_passkey_here']);
     }
 
     public function store(Request $request)

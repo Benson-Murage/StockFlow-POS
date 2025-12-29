@@ -184,6 +184,7 @@ export default function AddPaymentDialog({
                                     <MenuItem value={'Cheque'}>Cheque</MenuItem>
                                     <MenuItem value={'Card'}>Card</MenuItem>
                                     <MenuItem value={'Bank'}>Bank</MenuItem>
+                                    <MenuItem value={'MPesa'}>MPesa</MenuItem>
                                     {selectedTransaction === null && (
                                         <MenuItem value={'Account Balance'}>Account Balance</MenuItem>
                                     )}

@@ -23,6 +23,7 @@ import HeldItemsModal from "./HeldItemsModal";
 import PaymentsCheckoutDialog from "@/Components/PaymentsCheckoutDialog";
 import QuotationDialog from "./QuotationDialog";
 import CashCheckoutDialog from "./CashCheckoutDialog";
+import MpesaCheckoutDialog from "./MpesaCheckoutDialog";
 import SaleTemplateDialog from "../SaleTemplate/SaleTemplateDialog";
 
 import Swal from "sweetalert2";
@@ -252,12 +253,21 @@ export default function CartFooter() {
                 )}
             </Grid>
 
-            <Grid container mt={1}>
-                <CashCheckoutDialog
-                    disabled={
-                        cartState.length === 0 || selectedCustomer === null || !saleDate
-                    }
-                />
+            <Grid container mt={1} spacing={1}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                    <CashCheckoutDialog
+                        disabled={
+                            cartState.length === 0 || selectedCustomer === null || !saleDate
+                        }
+                    />
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                    <MpesaCheckoutDialog
+                        disabled={
+                            cartState.length === 0 || selectedCustomer === null || !saleDate
+                        }
+                    />
+                </Grid>
             </Grid>
 
             <HeldItemsModal

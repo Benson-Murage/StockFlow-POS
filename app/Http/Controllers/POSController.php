@@ -246,7 +246,9 @@ class POSController extends Controller
             'edit_sale' => true,
             'sale_data' => $sale,
             'misc_settings' => $miscSettings,
-            'default_charges' => $defaultCharges
+            'default_charges' => $defaultCharges,
+            'mpesa_enabled' => $mpesaEnabled && $mpesaConfigured,
+            'mpesa_env_configured' => $mpesaConfigured,
         ]);
     }
 
