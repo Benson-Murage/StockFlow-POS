@@ -21,6 +21,7 @@ import { SharedContext } from "@/Context/SharedContext";
 import { useCurrencyFormatter, toNumeric } from "@/lib/currencyFormatter";
 import { useCurrencyStore } from "@/stores/currencyStore";
 
+console.log('MpesaCheckoutDialog component loaded');
 export default function MpesaCheckoutDialog({ disabled }) {
     const formatCurrency = useCurrencyFormatter();
     const currencySymbol = useCurrencyStore((state) => state.settings.currency_symbol);
@@ -38,7 +39,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
     const autoOpenPrintSetting = usePage().props.settings?.auto_open_print_dialog ?? '1';
     const [openPrintDialog, setOpenPrintDialog] = useState(autoOpenPrintSetting === '1');
 
-    const [amountReceived, setAmountReceived] = useState(0);
+    const [amountReceived, setAmountReceived] = useState('');
     const [recalculatedCharges, setRecalculatedCharges] = useState(totalChargeAmount);
     const [mpesaPhone, setMpesaPhone] = useState('');
     const isMobile = window.innerWidth < 768;
@@ -60,10 +61,25 @@ export default function MpesaCheckoutDialog({ disabled }) {
         setRecalculatedCharges(recalculatedChargeAmount);
     };
 
+    // Check if M-Pesa is properly configured
+    const mpesaEnabled = usePage().props.mpesa_enabled ?? false;
+    const mpesaEnvConfigured = usePage().props.mpesa_env_configured ?? false;
+    const isMpesaAvailable = mpesaEnabled && mpesaEnvConfigured;
+
     const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
+        if (!isMpesaAvailable) {
+            Swal.fire({
+                title: "M-Pesa Not Configured",
+                text: "Please configure M-Pesa in Settings → Misc Settings and add credentials to .env file.",
+                icon: "warning",
+                confirmButtonText: "OK"
+            });
+            return;
+        }
         setContextDiscount(0);
+        setAmountReceived(((cartTotal - discount) + recalculatedCharges).toString());
         setOpen(true);
     };
 
@@ -167,28 +183,32 @@ export default function MpesaCheckoutDialog({ disabled }) {
         setRecalculatedCharges(recalculatedChargeAmount);
     }
 
-    // Check if M-Pesa is properly configured
-    const mpesaEnabled = usePage().props.mpesa_enabled ?? false;
-    const mpesaEnvConfigured = usePage().props.mpesa_env_configured ?? false;
-    const isMpesaAvailable = mpesaEnabled && mpesaEnvConfigured;
-
-    if (!isMpesaAvailable) {
-        return null; // Don't show the button if M-Pesa is not configured
-    }
+    // Debug logging
+    console.log('MpesaCheckoutDialog rendering', { mpesaEnabled, mpesaEnvConfigured, isMpesaAvailable, disabled });
 
     return (
         <Grid size={12}>
             <Button
                 variant="contained"
-                color="primary"
-                sx={{ paddingY: "15px", flexGrow: "1" }}
+                color={isMpesaAvailable ? "primary" : "warning"}
+                sx={{
+                    paddingY: "15px", 
+                    flexGrow: "1",
+                    backgroundColor: isMpesaAvailable ? "#1976d2" : "#ff9800",
+                    '&:hover': {
+                        backgroundColor: isMpesaAvailable ? "#1565c0" : "#f57c00",
+                    }
+                }}
                 size="large"
                 endIcon={<SmartphoneIcon />}
                 onClick={handleClickOpen}
                 disabled={disabled}
                 fullWidth
             >
-                {reactiveFinalTotal < 0 ? `REFUND ${formatCurrency(Math.abs(reactiveFinalTotal))}` : `MPESA ${formatCurrency(reactiveFinalTotal)}`}
+                {isMpesaAvailable 
+                    ? (reactiveFinalTotal < 0 ? `REFUND ${formatCurrency(Math.abs(reactiveFinalTotal))}` : `MPESA ${formatCurrency(reactiveFinalTotal)}`)
+                    : "MPESA (Not Configured)"
+                }
             </Button>
             <Dialog
                 fullWidth={true}
@@ -200,7 +220,6 @@ export default function MpesaCheckoutDialog({ disabled }) {
                     component: 'form',
                     onSubmit: handleSubmit,
                 }}
-                fullScreen={isMobile}
             >
                 <DialogTitle id="alert-dialog-title">
                     {"MPesa Checkout"}
@@ -221,13 +240,18 @@ export default function MpesaCheckoutDialog({ disabled }) {
                     <TextField
                         fullWidth
                         variant="outlined"
-                        label={"MPesa Phone Number"}
+                        label="MPesa Phone Number"
                         name="mpesa_phone"
                         value={mpesaPhone}
-                        onChange={(e) => setMpesaPhone(e.target.value)}
+                        onChange={(e) => {
+                            console.log('Phone number changed:', e.target.value);
+                            setMpesaPhone(e.target.value);
+                        }}
                         placeholder="2547XXXXXXXX"
                         sx={{ mb: "1.5rem", input: { fontSize: '1.2rem' } }}
                         required
+                        autoComplete="tel"
+                        autoFocus
                         slotProps={{
                             inputLabel: {
                                 shrink: true,
@@ -238,6 +262,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                                         +254
                                     </InputAdornment>
                                 ),
+                                inputMode: "tel",
                             },
                         }}
                     />
@@ -268,6 +293,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                                         </IconButton>
                                     </InputAdornment>
                                 ),
+                                inputMode: "decimal",
                             }
                         }}
                     />
@@ -296,13 +322,14 @@ export default function MpesaCheckoutDialog({ disabled }) {
                                 label="Amount"
                                 variant="outlined"
                                 name="amount_received"
-                                type="number"
-                                value={amountReceived || ((cartTotal - discount) + recalculatedCharges)}
-                                onChange={(e) => setAmountReceived(parseFloat(e.target.value) || 0)}
+                                type="text"
+                                value={amountReceived}
+                                onChange={(e) => setAmountReceived(e.target.value)}
                                 sx={{input: { textAlign: "center", fontSize: '2rem' } }}
                                 slotProps={{
                                     input: {
                                         startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                                        inputMode: "decimal",
                                     },
                                 }}
                             />
@@ -316,17 +343,16 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         name="note"
                         multiline
                         sx={{ mb: '2rem', }}
+                        slotProps={{
+                            input: {
+                                inputMode: "text",
+                            },
+                        }}
                     />
 
                     <Grid container size={12} sx={{ mb: "1rem" }}>
                         <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={openPrintDialog}
-                                    onChange={(e) => setOpenPrintDialog(e.target.checked)}
-                                    name="open_print_dialog"
-                                />
-                            }
+                            control={<Checkbox checked={openPrintDialog} onChange={(e) => setOpenPrintDialog(e.target.checked)} name="open_print_dialog" />}
                             label="Open Print Dialog"
                         />
                     </Grid>
@@ -338,14 +364,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         fullWidth
                         sx={{ paddingY: "15px", fontSize: "1.5rem" }}
                         type="submit"
-                        disabled={
-                            !mpesaPhone ||
-                            !amountReceived ||
-                            (cartTotal < 0 && amountReceived === 0) ||
-                            (cartTotal < 0 && amountReceived !== ((cartTotal - discount) + recalculatedCharges)) ||
-                            (cartTotal >= 0 && (amountReceived - ((cartTotal - discount) + recalculatedCharges)) < 0) ||
-                            loading
-                        }
+                        disabled={!mpesaPhone || !amountReceived.trim() || (cartTotal < 0 && parseFloat(amountReceived) === 0) || (cartTotal < 0 && parseFloat(amountReceived) !== ((cartTotal - discount) + recalculatedCharges)) || (cartTotal >= 0 && (parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges)) < 0) || loading}
                     >
                         {loading ? 'Processing...' : cartTotal < 0 ? 'REFUND' : 'SEND STK PUSH'}
                     </Button>

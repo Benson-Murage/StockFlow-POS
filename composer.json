@@ -52,7 +52,8 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
+            "@php artisan native:install --force --quiet "
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
@@ -80,7 +81,11 @@
             "@php artisan optimize"
         ],
         "queue:work": "php artisan queue:work --tries=3 --timeout=300",
-        "schedule:run": "php artisan schedule:run --verbose --no-interaction --schedule=1"
+        "schedule:run": "php artisan schedule:run --verbose --no-interaction --schedule=1",
+        "native:dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "npx concurrently -k -c \"#93c5fd,#c4b5fd\" \"php artisan native:run --no-interaction\" \"npm run dev\" --names=app,vite"
+        ]
     },
     "extra": {
         "laravel": {
@@ -95,6 +100,9 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.4.16"
         }
     },
     "minimum-stability": "stable",

@@ -38,7 +38,7 @@ export default function CashCheckoutDialog({ disabled }) {
     const autoOpenPrintSetting = usePage().props.settings?.auto_open_print_dialog ?? '1';
     const [openPrintDialog, setOpenPrintDialog] = useState(autoOpenPrintSetting === '1');
 
-    const [amountReceived, setAmountReceived] = useState(0);
+    const [amountReceived, setAmountReceived] = useState('');
     const [recalculatedCharges, setRecalculatedCharges] = useState(totalChargeAmount);
     const isMobile = window.innerWidth < 768;
 
@@ -63,6 +63,7 @@ export default function CashCheckoutDialog({ disabled }) {
 
     const handleClickOpen = () => {
         setContextDiscount(0);
+        setAmountReceived(((cartTotal - discount) + recalculatedCharges).toString());
         setOpen(true);
     };
 
@@ -186,7 +187,6 @@ export default function CashCheckoutDialog({ disabled }) {
                     component: 'form',
                     onSubmit: handleSubmit,
                 }}
-                fullScreen={isMobile}
             >
                 <DialogTitle id="alert-dialog-title">
                     {"Cash Checkout"}
@@ -210,7 +210,7 @@ export default function CashCheckoutDialog({ disabled }) {
                         autoFocus
                         variant="outlined"
                         label={cartTotal < 0 ? 'Refund' : 'Amount Received'}
-                        type="number"
+                        type="text"
                         name="amount_received"
                         onFocus={event => {
                             event.target.select();
@@ -218,10 +218,9 @@ export default function CashCheckoutDialog({ disabled }) {
 
                         onChange={(event) => {
                             const value = event.target.value;
-
-                            const numericValue = parseFloat(value); // Convert to number
+                            const numericValue = parseFloat(value) || 0;
                             setAmountReceived(
-                                return_sale && numericValue > 0 ? -numericValue : numericValue
+                                (return_sale && numericValue > 0 ? -numericValue : numericValue).toString()
                             );
                         }}
 
@@ -232,6 +231,7 @@ export default function CashCheckoutDialog({ disabled }) {
                                 style: { textAlign: 'center' },
                                 placeholder: cartTotal < 0 ? 'Refund Amount' : 'Amount Received',
                                 startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                                inputMode: "decimal",
                             },
                         }}
                     />
@@ -263,6 +263,7 @@ export default function CashCheckoutDialog({ disabled }) {
                                         </IconButton>
                                     </InputAdornment>
                                 ),
+                                inputMode: "decimal",
                             }
                         }}
                     />
@@ -294,7 +295,7 @@ export default function CashCheckoutDialog({ disabled }) {
                                 variant="outlined"
                                 name="change_amount"
                                 sx={{input: { textAlign: "center", fontSize: '2rem' } }}
-                                value={formatCurrency(amountReceived - ((cartTotal - discount) + recalculatedCharges), false)}
+                                value={formatCurrency(parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges), false)}
                                 slotProps={{
                                     input: {
                                         readOnly: true,
@@ -312,6 +313,11 @@ export default function CashCheckoutDialog({ disabled }) {
                         name="note"
                         multiline
                         sx={{ mt: '2rem', }}
+                        slotProps={{
+                            input: {
+                                inputMode: "text",
+                            },
+                        }}
                     />
 
                     <Grid container size={12} sx={{ mt: "2rem", mb: "1rem" }}>
@@ -336,10 +342,10 @@ export default function CashCheckoutDialog({ disabled }) {
                         type="submit"
                         // onClick={handleClose}
                         disabled={
-                            !amountReceived ||
-                            (cartTotal < 0 && amountReceived === 0) ||
-                            (cartTotal < 0 && amountReceived != ((cartTotal - discount) + recalculatedCharges)) ||
-                            (cartTotal >= 0 && (amountReceived - ((cartTotal - discount) + recalculatedCharges)) < 0) ||
+                            !amountReceived.trim() ||
+                            (cartTotal < 0 && parseFloat(amountReceived) === 0) ||
+                            (cartTotal < 0 && parseFloat(amountReceived) != ((cartTotal - discount) + recalculatedCharges)) ||
+                            (cartTotal >= 0 && (parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges)) < 0) ||
                             loading
 
                         }
