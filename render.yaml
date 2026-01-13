@@ -1,12 +1,7 @@
+# ==============================================
 # Render platform configuration for StockFlowPOS
-# Complete deployment configuration for Laravel + React application
-# 
-# Two deployment options:
-# 1. Native PHP (recommended - faster builds, simpler)
-# 2. Docker (more control, slower builds)
-#
-# To use Native PHP: Set env to "php" or remove env line
-# To use Docker: Set env to "docker"
+# Native PHP buildpack version (No Docker)
+# ==============================================
 
 services:
   # ==============================================
@@ -14,122 +9,74 @@ services:
   # ==============================================
   - type: web
     name: stockflowpos-web
-    env: php  # Use "php" for native buildpack (recommended) or "docker" for Docker
-    region: oregon  # Change to your preferred region (oregon, frankfurt, singapore, etc.)
-    plan: starter  # Use 'starter' for development, 'standard' or 'pro' for production
+    region: oregon
+    plan: starter
     buildCommand: |
       # Install PHP dependencies
       composer install --no-dev --optimize-autoloader --no-interaction
-      
+
       # Install Node.js dependencies
       npm ci --only=production
-      
+
       # Build frontend assets
       npm run build
-      
-      # Generate application key if not set (will use APP_KEY from env if provided)
+
+      # Generate application key if not set
       php artisan key:generate --force || true
-      
+
       # Cache Laravel configuration
       php artisan config:cache
       php artisan route:cache
       php artisan view:cache
-      
-      # Run database migrations (optional - can be done manually)
-      # php artisan migrate --force
-      
+
       # Optimize for production
       php artisan optimize
-      
+
     startCommand: |
       # Create necessary directories
-      mkdir -p storage/logs storage/framework/sessions storage/framework/views storage/framework/cache bootstrap/cache
-      
+      mkdir -p storage/logs storage/framework/{sessions,views,cache} bootstrap/cache
+
       # Set proper permissions
       chmod -R 775 storage bootstrap/cache || true
-      
+
       # Start the application
       php artisan serve --host=0.0.0.0 --port=$PORT
-      
+
     healthCheckPath: /health
     autoDeploy: true
-    
+
     envVars:
       - key: APP_ENV
         value: production
       - key: APP_DEBUG
-        value: false
+        value: true
       - key: APP_TIMEZONE
-        value: UTC
+        value: Africa/Nairobi
       - key: LOG_CHANNEL
         value: stack
       - key: LOG_LEVEL
         value: error
       - key: SESSION_DRIVER
-        value: database
+        value: file
       - key: SESSION_LIFETIME
         value: 120
       - key: QUEUE_CONNECTION
-        value: database
+        value: sync
       - key: CACHE_DRIVER
-        value: database
+        value: file
       - key: BROADCAST_DRIVER
         value: log
       - key: FILESYSTEM_DISK
-        value: local
+        value: public
       - key: DB_CONNECTION
         value: mysql
-      # Note: Set these via Render dashboard for security
-      # Database credentials will be auto-injected if using fromDatabase
-      # - key: APP_KEY
-      #   generateValue: true
-      # - key: DB_HOST
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: host
-      # - key: DB_PORT
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: port
-      # - key: DB_DATABASE
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: database
-      # - key: DB_USERNAME
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: user
-      # - key: DB_PASSWORD
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: password
-      # - key: APP_URL
-      #   sync: false  # Will be set automatically by Render
-      # - key: SANCTUM_STATEFUL_DOMAINS
-      #   sync: false  # Set to your Render domain
-      # - key: MAIL_MAILER
-      #   value: smtp
-      # - key: MAIL_HOST
-      #   value: your-smtp-host
-      # - key: MAIL_PORT
-      #   value: 587
-      # - key: MAIL_USERNAME
-      #   value: your-username
-      # - key: MAIL_PASSWORD
-      #   value: your-password
-      # - key: MAIL_ENCRYPTION
-      #   value: tls
-      # - key: MAIL_FROM_ADDRESS
-      #   value: noreply@yourdomain.com
-      # - key: MAIL_FROM_NAME
-      #   value: StockFlowPOS
+      # Note: Database credentials will be injected automatically if using 'fromDatabase' (see below)
 
   # ==============================================
   # Background Worker (Queue Processing)
   # ==============================================
   - type: worker
     name: stockflowpos-worker
-    env: php  # Use "php" for native buildpack or "docker" for Docker
     region: oregon
     plan: starter
     buildCommand: |
@@ -137,6 +84,7 @@ services:
       npm ci --only=production
     startCommand: |
       php artisan queue:work --tries=3 --timeout=300 --sleep=3
+
     envVars:
       - key: APP_ENV
         value: production
@@ -144,66 +92,13 @@ services:
         value: false
       - key: DB_CONNECTION
         value: mysql
-      # Database credentials will be auto-injected if using fromDatabase
-      # - key: DB_HOST
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: host
-      # - key: DB_PORT
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: port
-      # - key: DB_DATABASE
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: database
-      # - key: DB_USERNAME
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: user
-      # - key: DB_PASSWORD
-      #   fromDatabase:
-      #     name: stockflowpos-db
-      #     property: password
 
+# ==============================================
+# MySQL Database Service
+# ==============================================
 databases:
-  # ==============================================
-  # MySQL Database Service
-  # ==============================================
   - name: stockflowpos-db
     databaseName: stockflowpos
     user: stockflowpos
-    plan: starter  # Use 'starter' for development, 'standard' or 'pro' for production
+    plan: starter
     region: oregon
-    # Database credentials will be automatically provided via environment variables
-    # when using fromDatabase references in service envVars
-
-# ==============================================
-# Optional: Redis Cache Service
-# ==============================================
-# Redis is available as an add-on on Render
-# To use Redis:
-# 1. Create a Redis instance in Render dashboard
-# 2. Add these envVars to your web service:
-#    - key: REDIS_HOST
-#      fromService:
-#        name: stockflowpos-redis
-#        type: redis
-#        property: host
-#    - key: REDIS_PASSWORD
-#      fromService:
-#        name: stockflowpos-redis
-#        type: redis
-#        property: password
-#    - key: REDIS_PORT
-#      fromService:
-#        name: stockflowpos-redis
-#        type: redis
-#        property: port
-# 3. Update these envVars:
-#    - key: CACHE_DRIVER
-#      value: redis
-#    - key: SESSION_DRIVER
-#      value: redis
-#    - key: QUEUE_CONNECTION
-#      value: redis
