@@ -29,12 +29,16 @@ export default function SearchBox() {
     const [inputValue, setInputValue] = useState("");
     const searchRef = useRef(null);
 
-    const fetchProducts = (search_query) => {
-        if (search_query.length > 2) {
+    const fetchProducts = (search_query, immediate = false) => {
+        // For barcode scanners: allow search with 1+ characters (barcodes can be short)
+        // For manual typing: require 3+ characters to reduce API calls
+        const minLength = immediate ? 1 : 3;
+        
+        if (search_query && search_query.trim().length >= minLength) {
             setLoading(true);
             axios
                 .get(`/products/search`, {
-                    params: { search_query },
+                    params: { search_query: search_query.trim() },
                 }) // Send both parameters
                 .then((response) => {
                     setOptions(response.data.products); // Set options with response products
@@ -108,12 +112,18 @@ export default function SearchBox() {
         }
     };
 
+    // Shorter debounce for barcode scanners (they send characters very quickly)
     const debouncedFetchProducts = useCallback(
         _.debounce((search_query) => {
-            fetchProducts(search_query);
-        }, 300), // 500ms debounce delay
-        []
+            fetchProducts(search_query, false);
+        }, scanModeEnabled ? 150 : 300), // Faster debounce in scan mode
+        [scanModeEnabled]
     );
+
+    const shouldBypassScanFocus = useCallback((target) => {
+        if (!target) return false;
+        return Boolean(target.closest('[data-scan-focus-lock="true"]'));
+    }, []);
 
     useEffect(() => {
         if (searchRef.current) {
@@ -121,6 +131,9 @@ export default function SearchBox() {
         }
         const keepFocus = (e) => {
             if (!scanModeEnabled) return;
+            if (shouldBypassScanFocus(e.target)) return;
+            // Don't steal focus if user is typing in the search box itself
+            if (e.target === searchRef.current || e.target.closest('#searchBox')) return;
             if (searchRef.current) {
                 searchRef.current.focus();
             }
@@ -130,7 +143,7 @@ export default function SearchBox() {
             document.removeEventListener('keydown', keepFocus, true);
             debouncedFetchProducts.cancel(); // Cleanup: Cancel pending debounced calls
         };
-    }, [debouncedFetchProducts, scanModeEnabled]);
+    }, [debouncedFetchProducts, scanModeEnabled, shouldBypassScanFocus]);
 
     const onSearchInputChange = (e) => {
         const input = e.target.value;
@@ -138,9 +151,18 @@ export default function SearchBox() {
         debouncedFetchProducts(input); // Call the debounced fetch logic
     };
 
-    useEffect(() => {
-        document.addEventListener("keydown", detectKyDown, true);
-    }, [])
+    // Handle Enter key for barcode scanners (they send Enter after scanning)
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            const currentValue = e.target.value || inputValue;
+            if (currentValue && currentValue.trim().length > 0) {
+                e.preventDefault();
+                // Cancel any pending debounced calls and search immediately
+                debouncedFetchProducts.cancel();
+                fetchProducts(currentValue.trim(), true);
+            }
+        }
+    };
 
     const detectKyDown = (e) => {
         if (e.key === "ArrowUp") {
@@ -217,6 +239,7 @@ export default function SearchBox() {
                             onChange={
                                 onSearchInputChange
                             }
+                            onKeyDown={handleKeyDown}
                             onFocus={(event) => {
                                 event.target.select();
                             }}

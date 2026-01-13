@@ -29,7 +29,7 @@ export default function CashCheckoutDialog({ disabled }) {
     const edit_sale = usePage().props.edit_sale;
     const edit_sale_id = usePage().props.sale_id;
 
-    const { cartState, cartTotal, totalProfit, emptyCart, charges, totalChargeAmount, finalTotal, discount, setDiscount: setContextDiscount, calculateChargesWithDiscount } = useCart();
+    const { cartState, cartTotal, totalProfit, emptyCartItemsOnly, charges, totalChargeAmount, finalTotal, discount, setDiscount: setContextDiscount, calculateChargesWithDiscount } = useCart();
     const { selectedCustomer, saleDate, saleTime } = useContext(SharedContext);
     const [loading, setLoading] = useState(false);
 
@@ -38,20 +38,35 @@ export default function CashCheckoutDialog({ disabled }) {
     const autoOpenPrintSetting = usePage().props.settings?.auto_open_print_dialog ?? '1';
     const [openPrintDialog, setOpenPrintDialog] = useState(autoOpenPrintSetting === '1');
 
-    const [amountReceived, setAmountReceived] = useState('');
+    const [amountReceived, setAmountReceived] = useState('0');
     const [recalculatedCharges, setRecalculatedCharges] = useState(totalChargeAmount);
+    const [note, setNote] = useState('');
+    const [discountValue, setDiscountValue] = useState(discount.toString());
     const isMobile = window.innerWidth < 768;
 
     // Calculate reactive final total with discount
     const reactiveFinalTotal = (cartTotal - discount) + recalculatedCharges;
 
-    // Initialize recalculated charges when dialog opens or when charges/cartTotal/discount change
+    // Initialize recalculated charges with optimized dependencies to prevent unnecessary re-renders
     useEffect(() => {
-        setRecalculatedCharges(calculateChargesWithDiscount(discount));
-    }, [charges, cartTotal, discount]);
+        const timeoutId = setTimeout(() => {
+            setRecalculatedCharges(calculateChargesWithDiscount(discount));
+        }, 100);
+        return () => clearTimeout(timeoutId);
+    }, [charges, discount]); // Removed cartTotal to prevent frequent re-renders
+
+    // Sync local discount with context only when dialog is closed
+    useEffect(() => {
+        if (!open) {
+            setDiscountValue(discount.toString());
+        }
+    }, [discount, open]);
 
     const handleDiscountChange = (event) => {
         const inputDiscount = event.target.value;
+        console.log('Cash discount changed:', inputDiscount);
+        setDiscountValue(inputDiscount);
+        
         const newDiscount = inputDiscount !== "" ? parseFloat(inputDiscount) : 0;
         setContextDiscount(newDiscount);
 
@@ -62,14 +77,25 @@ export default function CashCheckoutDialog({ disabled }) {
     const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
-        setContextDiscount(0);
-        setAmountReceived(((cartTotal - discount) + recalculatedCharges).toString());
+        console.log('Cash dialog opened, current amountReceived:', amountReceived);
+        console.log('Current note:', note);
+        console.log('Current discountValue:', discountValue);
+        // Don't reset discount - let user keep their input
+        // Only set amount if it's currently empty or zero - preserve user's typing
+        if (!amountReceived || amountReceived === '0') {
+            const calculatedAmount = ((cartTotal - discount) + recalculatedCharges).toString();
+            setAmountReceived(calculatedAmount);
+            console.log('Cash amount set to:', calculatedAmount);
+        } else {
+            console.log('Preserving existing amount:', amountReceived);
+        }
+        // Don't reset note - let user keep their input
         setOpen(true);
     };
 
     const handleClose = () => {
-        setAmountReceived(0)
-        setContextDiscount(0)
+        // Don't reset note and discount - preserve user's input when closing
+        setAmountReceived('0')
         setOpen(false);
     };
 
@@ -81,11 +107,13 @@ export default function CashCheckoutDialog({ disabled }) {
         const formData = new FormData(event.currentTarget);
         const formJson = Object.fromEntries(formData.entries());
 
-        // Sanitize numeric fields
-        formJson.amount_received = toNumeric(formJson.amount_received);
+        // Sanitize numeric fields - handle return sale logic here
+        const amountValue = parseFloat(formJson.amount_received) || 0;
+        const finalAmount = return_sale && amountValue > 0 ? -amountValue : amountValue;
+        formJson.amount_received = toNumeric(finalAmount.toString());
         formJson.discount = toNumeric(formJson.discount);
         formJson.net_total = toNumeric((cartTotal - discount) + recalculatedCharges);
-        formJson.change_amount = toNumeric(amountReceived - ((cartTotal - discount) + recalculatedCharges));
+        formJson.change_amount = toNumeric(amountValue - ((cartTotal - discount) + recalculatedCharges));
 
         formJson.cartItems = cartState.map(item => ({
             ...item,
@@ -118,8 +146,8 @@ export default function CashCheckoutDialog({ disabled }) {
                     timerProgressBar: true,
                 });
                 emptyCart() //Clear the cart from the Context API
-                setAmountReceived(0)
-                setContextDiscount(0)
+                setAmountReceived('0')
+                // Don't reset context discount or note - let them persist for next transaction
                 if (openPrintDialog && resp.data.receipt) {
                     setReceiptData(resp.data.receipt);
                     setShowPrintModal(true);
@@ -186,6 +214,7 @@ export default function CashCheckoutDialog({ disabled }) {
                 PaperProps={{
                     component: 'form',
                     onSubmit: handleSubmit,
+                    'data-scan-focus-lock': 'true',
                 }}
             >
                 <DialogTitle id="alert-dialog-title">
@@ -217,22 +246,22 @@ export default function CashCheckoutDialog({ disabled }) {
                         }}
 
                         onChange={(event) => {
+                            console.log('Cash amount changed:', event.target.value);
+                            console.log('Cash amount input event fired');
                             const value = event.target.value;
-                            const numericValue = parseFloat(value) || 0;
-                            setAmountReceived(
-                                (return_sale && numericValue > 0 ? -numericValue : numericValue).toString()
-                            );
+                            // Simple string assignment - preserve user's exact typing
+                            setAmountReceived(value);
                         }}
 
                         sx={{ input: { textAlign: "center", fontSize: '2rem' }, }}
                         value={amountReceived}
-                        slotProps={{
-                            input: {
-                                style: { textAlign: 'center' },
-                                placeholder: cartTotal < 0 ? 'Refund Amount' : 'Amount Received',
-                                startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
-                                inputMode: "decimal",
-                            },
+                        InputProps={{
+                            style: { textAlign: 'center' },
+                            placeholder: cartTotal < 0 ? 'Refund Amount' : 'Amount Received',
+                            startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                        }}
+                        inputProps={{
+                            inputMode: "decimal"
                         }}
                     />
 
@@ -240,31 +269,33 @@ export default function CashCheckoutDialog({ disabled }) {
                         fullWidth
                         id="txtDiscount"
                         // label="Discount"
-                        type="number"
+                        type="text"
                         name="discount"
                         label="Discount"
                         variant="outlined"
-                        value={discount}
                         sx={{ mt: "1.5rem", input: { textAlign: "center", fontSize: '2rem' }, }}
                         onChange={handleDiscountChange}
                         onFocus={event => {
                             event.target.select();
                         }}
+                        value={discountValue}
                         slotProps={{
                             inputLabel: {
                                 shrink: true,
                             },
-                            input: {
-                                startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
-                                endAdornment: (
-                                    <InputAdornment position="start">
-                                        <IconButton color="primary" onClick={discountPercentage}>
-                                            <PercentIcon fontSize="large"></PercentIcon>
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                                inputMode: "decimal",
-                            }
+                        }}
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                            endAdornment: (
+                                <InputAdornment position="start">
+                                    <IconButton color="primary" onClick={discountPercentage}>
+                                        <PercentIcon fontSize="large"></PercentIcon>
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        inputProps={{
+                            inputMode: "decimal"
                         }}
                     />
 
@@ -313,10 +344,13 @@ export default function CashCheckoutDialog({ disabled }) {
                         name="note"
                         multiline
                         sx={{ mt: '2rem', }}
-                        slotProps={{
-                            input: {
-                                inputMode: "text",
-                            },
+                        value={note}
+                        onChange={(e) => {
+                            console.log('Cash note changed:', e.target.value);
+                            setNote(e.target.value);
+                        }}
+                        inputProps={{
+                            inputMode: "text",
                         }}
                     />
 
@@ -344,7 +378,7 @@ export default function CashCheckoutDialog({ disabled }) {
                         disabled={
                             !amountReceived.trim() ||
                             (cartTotal < 0 && parseFloat(amountReceived) === 0) ||
-                            (cartTotal < 0 && parseFloat(amountReceived) != ((cartTotal - discount) + recalculatedCharges)) ||
+                            (cartTotal < 0 && parseFloat(amountReceived) != Math.abs((cartTotal - discount) + recalculatedCharges)) ||
                             (cartTotal >= 0 && (parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges)) < 0) ||
                             loading
 

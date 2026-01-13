@@ -39,21 +39,36 @@ export default function MpesaCheckoutDialog({ disabled }) {
     const autoOpenPrintSetting = usePage().props.settings?.auto_open_print_dialog ?? '1';
     const [openPrintDialog, setOpenPrintDialog] = useState(autoOpenPrintSetting === '1');
 
-    const [amountReceived, setAmountReceived] = useState('');
+    const [amountReceived, setAmountReceived] = useState('0');
     const [recalculatedCharges, setRecalculatedCharges] = useState(totalChargeAmount);
     const [mpesaPhone, setMpesaPhone] = useState('');
+    const [note, setNote] = useState('');
+    const [discountValue, setDiscountValue] = useState(discount.toString());
     const isMobile = window.innerWidth < 768;
 
     // Calculate reactive final total with discount
     const reactiveFinalTotal = (cartTotal - discount) + recalculatedCharges;
 
-    // Initialize recalculated charges when dialog opens or when charges/cartTotal/discount change
+    // Initialize recalculated charges with optimized dependencies to prevent unnecessary re-renders
     useEffect(() => {
-        setRecalculatedCharges(calculateChargesWithDiscount(discount));
-    }, [charges, cartTotal, discount]);
+        const timeoutId = setTimeout(() => {
+            setRecalculatedCharges(calculateChargesWithDiscount(discount));
+        }, 100);
+        return () => clearTimeout(timeoutId);
+    }, [charges, discount]); // Removed cartTotal to prevent frequent re-renders
+
+    // Sync local discount with context only when dialog is closed
+    useEffect(() => {
+        if (!open) {
+            setDiscountValue(discount.toString());
+        }
+    }, [discount, open]);
 
     const handleDiscountChange = (event) => {
         const inputDiscount = event.target.value;
+        console.log('Mpesa discount changed:', inputDiscount);
+        setDiscountValue(inputDiscount);
+        
         const newDiscount = inputDiscount !== "" ? parseFloat(inputDiscount) : 0;
         setContextDiscount(newDiscount);
 
@@ -78,15 +93,26 @@ export default function MpesaCheckoutDialog({ disabled }) {
             });
             return;
         }
-        setContextDiscount(0);
-        setAmountReceived(((cartTotal - discount) + recalculatedCharges).toString());
+        console.log('Mpesa dialog opened, current amountReceived:', amountReceived);
+        console.log('Current mpesaPhone:', mpesaPhone);
+        console.log('Current note:', note);
+        console.log('Current discountValue:', discountValue);
+        // Don't reset discount - let user keep their input
+        // Only set amount if it's currently empty or zero - preserve user's typing
+        if (!amountReceived || amountReceived === '0') {
+            const calculatedAmount = ((cartTotal - discount) + recalculatedCharges).toString();
+            setAmountReceived(calculatedAmount);
+            console.log('Mpesa amount set to:', calculatedAmount);
+        } else {
+            console.log('Preserving existing amount:', amountReceived);
+        }
+        // Don't reset mpesaPhone or note - let user keep their input
         setOpen(true);
     };
 
     const handleClose = () => {
-        setAmountReceived(0)
-        setContextDiscount(0)
-        setMpesaPhone('')
+        // Don't reset note, discount, or mpesaPhone - preserve user's input when closing
+        setAmountReceived('0')
         setOpen(false);
     };
 
@@ -139,9 +165,8 @@ export default function MpesaCheckoutDialog({ disabled }) {
                     timerProgressBar: true,
                 });
                 emptyCart() //Clear the cart from the Context API
-                setAmountReceived(0)
-                setContextDiscount(0)
-                setMpesaPhone('')
+                setAmountReceived('0')
+                // Don't reset context discount, mpesaPhone, or note - let them persist for next transaction
                 if (!resp.data?.mpesa_pending && openPrintDialog && resp.data.receipt) {
                     setReceiptData(resp.data.receipt);
                     setShowPrintModal(true);
@@ -219,6 +244,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                 PaperProps={{
                     component: 'form',
                     onSubmit: handleSubmit,
+                    'data-scan-focus-lock': 'true',
                 }}
             >
                 <DialogTitle id="alert-dialog-title">
@@ -245,6 +271,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         value={mpesaPhone}
                         onChange={(e) => {
                             console.log('Phone number changed:', e.target.value);
+                            console.log('Phone input event fired');
                             setMpesaPhone(e.target.value);
                         }}
                         placeholder="2547XXXXXXXX"
@@ -256,25 +283,20 @@ export default function MpesaCheckoutDialog({ disabled }) {
                             inputLabel: {
                                 shrink: true,
                             },
-                            input: {
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        +254
-                                    </InputAdornment>
-                                ),
-                                inputMode: "tel",
-                            },
+                        }}
+                        inputProps={{
+                            inputMode: "tel",
                         }}
                     />
 
                     <TextField
                         fullWidth
                         id="txtDiscount"
-                        type="number"
+                        type="text"
                         name="discount"
                         label="Discount"
                         variant="outlined"
-                        value={discount}
+                        value={discountValue}
                         sx={{ mb: "1.5rem", input: { textAlign: "center", fontSize: '2rem' }, }}
                         onChange={handleDiscountChange}
                         onFocus={event => {
@@ -284,17 +306,19 @@ export default function MpesaCheckoutDialog({ disabled }) {
                             inputLabel: {
                                 shrink: true,
                             },
-                            input: {
-                                startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
-                                endAdornment: (
-                                    <InputAdornment position="start">
-                                        <IconButton color="primary" onClick={discountPercentage}>
-                                            <PercentIcon fontSize="large"></PercentIcon>
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                                inputMode: "decimal",
-                            }
+                        }}
+                        InputProps={{
+                            startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                            endAdornment: (
+                                <InputAdornment position="start">
+                                    <IconButton color="primary" onClick={discountPercentage}>
+                                        <PercentIcon fontSize="large"></PercentIcon>
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        inputProps={{
+                            inputMode: "decimal"
                         }}
                     />
 
@@ -324,13 +348,17 @@ export default function MpesaCheckoutDialog({ disabled }) {
                                 name="amount_received"
                                 type="text"
                                 value={amountReceived}
-                                onChange={(e) => setAmountReceived(e.target.value)}
+                                onChange={(e) => {
+                                    console.log('Mpesa amount changed:', e.target.value);
+                                    console.log('Mpesa amount input event fired');
+                                    setAmountReceived(e.target.value);
+                                }}
                                 sx={{input: { textAlign: "center", fontSize: '2rem' } }}
-                                slotProps={{
-                                    input: {
-                                        startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
-                                        inputMode: "decimal",
-                                    },
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
+                                }}
+                                inputProps={{
+                                    inputMode: "decimal"
                                 }}
                             />
                         </Grid>
@@ -343,10 +371,13 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         name="note"
                         multiline
                         sx={{ mb: '2rem', }}
-                        slotProps={{
-                            input: {
-                                inputMode: "text",
-                            },
+                        value={note}
+                        onChange={(e) => {
+                            console.log('Note changed:', e.target.value);
+                            setNote(e.target.value);
+                        }}
+                        inputProps={{
+                            inputMode: "text",
                         }}
                     />
 
@@ -364,7 +395,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         fullWidth
                         sx={{ paddingY: "15px", fontSize: "1.5rem" }}
                         type="submit"
-                        disabled={!mpesaPhone || !amountReceived.trim() || (cartTotal < 0 && parseFloat(amountReceived) === 0) || (cartTotal < 0 && parseFloat(amountReceived) !== ((cartTotal - discount) + recalculatedCharges)) || (cartTotal >= 0 && (parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges)) < 0) || loading}
+                        disabled={!mpesaPhone || !amountReceived.trim() || (cartTotal < 0 && parseFloat(amountReceived) === 0) || (cartTotal < 0 && parseFloat(amountReceived) !== Math.abs((cartTotal - discount) + recalculatedCharges)) || (cartTotal >= 0 && (parseFloat(amountReceived) - ((cartTotal - discount) + recalculatedCharges)) < 0) || loading}
                     >
                         {loading ? 'Processing...' : cartTotal < 0 ? 'REFUND' : 'SEND STK PUSH'}
                     </Button>

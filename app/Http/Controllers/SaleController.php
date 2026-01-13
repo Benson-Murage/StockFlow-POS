@@ -93,6 +93,8 @@ class SaleController extends Controller
     {
         $receiptData = ReceiptDataService::getReceiptData($id);
 
+        \Log::info('Receipt data for sale ID ' . $id, $receiptData);
+
         if (!$receiptData['sale']) {
             abort(404);
         }

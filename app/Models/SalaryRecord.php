@@ -43,4 +43,20 @@ class SalaryRecord extends Model
         }
         return $query;
     }
+
+    /**
+     * Get the employee that owns this salary record
+     */
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    /**
+     * Get the store for this salary record
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
 }

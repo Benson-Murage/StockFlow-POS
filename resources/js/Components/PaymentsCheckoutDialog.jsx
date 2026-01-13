@@ -259,6 +259,7 @@ export default function PaymentsCheckoutDialog({
                 PaperProps={{
                     component: "form",
                     onSubmit: handleSubmit,
+                    'data-scan-focus-lock': 'true',
                 }}
             >
                 <DialogTitle id="alert-dialog-title">ADD PAYMENTS</DialogTitle>

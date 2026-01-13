@@ -26,15 +26,16 @@ import { snapdom } from '@zumer/snapdom';
 import { Download } from "lucide-react";
 import { useCurrencyFormatter } from "../../lib/currencyFormatter";
 
-export function ReceiptDisplay({ 
-    sale, 
-    salesItems, 
-    settings, 
-    user_name, 
+export function ReceiptDisplay({
+    sale,
+    salesItems,
+    settings,
+    user_name,
     credit_sale = false,
     autoTriggerPrint = false,
     hideActionButtons = false
 }) {
+    console.log('ReceiptDisplay props:', { sale, salesItems, settings, user_name, credit_sale });
     const contentRef = useRef(null);
     const reactToPrintFn = useReactToPrint({ contentRef });
     const [receiptNo, setReceiptNo] = useState(sale ? ' ' + sale.sale_prefix + "/" + sale.invoice_number : '');

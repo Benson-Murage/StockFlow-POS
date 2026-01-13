@@ -51,6 +51,10 @@ Route::get('/receipt/{id}', [SaleController::class, 'receipt'])->name('sales.rec
 Route::get('/api/receipt-text-raw/{id}', [SaleController::class, 'apiReceipt']);
 Route::get('/pending-sales-receipt/{contact_id}', [SaleController::class, 'pendingSalesReceipt']);
 
+// Sale status and receipt API endpoints for M-Pesa polling
+Route::get('/api/sales/{sale}/status', [SaleController::class, 'getStatus'])->name('sales.status');
+Route::get('/api/sales/{sale}/receipt', [SaleController::class, 'getReceipt'])->name('sales.receipt.api');
+
 Route::get('/version', [UpgradeController::class, 'checkVersion']);
 Route::post('/api/application-update', [UpgradeController::class, 'applicationUpdate']);
 

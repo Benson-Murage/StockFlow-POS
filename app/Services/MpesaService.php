@@ -34,17 +34,37 @@ class MpesaService
             throw new RuntimeException('MPesa credentials appear to be placeholder values. Please configure real Safaricom API credentials.');
         }
 
-        $response = Http::timeout(config('mpesa.request_timeout', 30))
-            ->withBasicAuth($consumerKey, $consumerSecret)
-            ->get($this->baseUrl . '/oauth/v1/generate', [
-                'grant_type' => 'client_credentials',
+        try {
+            // Safaricom OAuth endpoint requires grant_type as query parameter
+            $oauthUrl = $this->baseUrl . '/oauth/v1/generate?grant_type=client_credentials';
+            
+            $response = Http::timeout(config('mpesa.request_timeout', 60))
+                ->connectTimeout(30) // Connection timeout: 30 seconds
+                ->retry(2, 1000) // Retry twice with 1 second delay
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ])
+                ->withBasicAuth($consumerKey, $consumerSecret)
+                ->get($oauthUrl);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('MPesa connection failed', [
+                'url' => $this->baseUrl . '/oauth/v1/generate',
+                'error' => $e->getMessage(),
             ]);
+            throw new RuntimeException('Unable to connect to MPesa API. Please check your internet connection and try again. Error: ' . $e->getMessage());
+        }
 
         if (! $response->successful()) {
+            $errorBody = $response->body();
+            $errorJson = $response->json();
+            
             Log::error('MPesa access token request failed', [
                 'status' => $response->status(),
-                'body' => $response->body(),
-                'url' => $this->baseUrl . '/oauth/v1/generate'
+                'body' => $errorBody,
+                'json' => $errorJson,
+                'url' => $this->baseUrl . '/oauth/v1/generate',
+                'environment' => config('mpesa.environment'),
             ]);
             
             $errorMessage = 'Unable to obtain MPesa access token.';
@@ -52,6 +72,10 @@ class MpesaService
                 $errorMessage = 'MPesa authentication failed. Please check your consumer key and secret.';
             } elseif ($response->status() === 403) {
                 $errorMessage = 'MPesa access forbidden. Please check your API permissions.';
+            } elseif ($response->status() === 500) {
+                $errorCode = $errorJson['errorCode'] ?? 'Unknown';
+                $errorDesc = $errorJson['errorMessage'] ?? $errorJson['error_description'] ?? $errorBody;
+                $errorMessage = "MPesa API error (500): {$errorCode} - {$errorDesc}";
             }
             
             throw new RuntimeException($errorMessage);
@@ -89,33 +113,80 @@ class MpesaService
 
         // Normalize phone to 2547xxxxxxxx
         $normalizedPhone = $this->normalizePhone($phone);
+        
+        // Safaricom requires amount as integer (whole shillings, no decimals)
+        // Round to nearest integer and ensure it's at least 1
+        $amountInt = max(1, (int) round($amount));
 
         $payload = [
-            'BusinessShortCode' => $shortcode,
+            'BusinessShortCode' => (string) $shortcode, // Ensure string format
             'Password' => $password,
             'Timestamp' => $timestamp,
             'TransactionType' => 'CustomerPayBillOnline',
-            'Amount' => $amount,
+            'Amount' => $amountInt, // Integer amount required
             'PartyA' => $normalizedPhone,
-            'PartyB' => $shortcode,
+            'PartyB' => (string) $shortcode, // Ensure string format
             'PhoneNumber' => $normalizedPhone,
             'CallBackURL' => $callbackUrl,
             'AccountReference' => Str::limit($reference, 20, ''),
             'TransactionDesc' => Str::limit($description, 40, ''),
         ];
+        
+        Log::info('MPesa STK Push request', [
+            'payload' => $payload,
+            'amount_original' => $amount,
+            'amount_sent' => $amountInt,
+            'callback_url' => $callbackUrl,
+        ]);
 
-        $response = Http::timeout(config('mpesa.request_timeout', 30))
-            ->withToken($token)
-            ->post($this->baseUrl . '/mpesa/stkpush/v1/processrequest', $payload);
+        try {
+            $response = Http::timeout(config('mpesa.request_timeout', 60))
+                ->connectTimeout(30) // Connection timeout: 30 seconds
+                ->retry(2, 1000) // Retry twice with 1 second delay
+                ->withHeaders([
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])
+                ->withToken($token)
+                ->post($this->baseUrl . '/mpesa/stkpush/v1/processrequest', $payload);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('MPesa STK Push connection failed', [
+                'url' => $this->baseUrl . '/mpesa/stkpush/v1/processrequest',
+                'error' => $e->getMessage(),
+            ]);
+            throw new RuntimeException('Unable to connect to MPesa API. Please check your internet connection and try again. Error: ' . $e->getMessage());
+        }
 
         if (! $response->successful()) {
-            Log::error('MPesa STK Push failed', ['payload' => $payload, 'body' => $response->body()]);
-            throw new RuntimeException('Unable to initiate MPesa STK Push.');
+            $errorBody = $response->body();
+            $errorJson = $response->json();
+            
+            Log::error('MPesa STK Push failed', [
+                'status' => $response->status(),
+                'payload' => $payload,
+                'body' => $errorBody,
+                'json' => $errorJson,
+                'url' => $this->baseUrl . '/mpesa/stkpush/v1/processrequest',
+            ]);
+            
+            $errorMessage = 'Unable to initiate MPesa STK Push.';
+            if ($response->status() === 500) {
+                $errorCode = $errorJson['errorCode'] ?? 'Unknown';
+                $errorDesc = $errorJson['errorMessage'] ?? $errorJson['error_description'] ?? $errorBody;
+                $errorMessage = "MPesa API error (500): {$errorCode} - {$errorDesc}";
+            }
+            
+            throw new RuntimeException($errorMessage);
         }
 
         $json = $response->json();
         if (($json['ResponseCode'] ?? null) !== '0') {
-            Log::error('MPesa STK Push error response', ['payload' => $payload, 'json' => $json]);
+            Log::error('MPesa STK Push error response', [
+                'payload' => $payload,
+                'json' => $json,
+                'ResponseCode' => $json['ResponseCode'] ?? null,
+                'ResponseDescription' => $json['ResponseDescription'] ?? null,
+            ]);
             throw new RuntimeException($json['ResponseDescription'] ?? 'MPesa STK Push rejected.');
         }
 

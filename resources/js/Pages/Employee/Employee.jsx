@@ -108,18 +108,53 @@ const columns = (handleRowClick) => [
         width: 120,
     },
     {
+        field: "salary_records_count",
+        headerName: "Payments",
+        width: 120,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: (params) => (
+            <Chip 
+                label={params.value || 0} 
+                size="small" 
+                color={params.value > 0 ? "success" : "default"}
+                onClick={() => window.location.href = `/payroll?employee_id=${params.row.id}`}
+                sx={{ cursor: 'pointer' }}
+            />
+        ),
+    },
+    {
+        field: "total_salary_paid",
+        headerName: "Total Paid",
+        width: 150,
+        align: 'right',
+        headerAlign: 'right',
+        renderCell: (params) => numeral(params.value || 0).format('0,0.00'),
+    },
+    {
+        field: "last_salary_date",
+        headerName: "Last Payment",
+        width: 150,
+        renderCell: (params) => params.value ? dayjs(params.value).format("YYYY-MM-DD") : "Never",
+    },
+    {
         field: 'action',
         headerName: 'Actions',
-        width: 150, align: 'right', headerAlign: 'right',
+        width: 200, align: 'right', headerAlign: 'right',
         renderCell: (params) => (
             <>
+            <Link href={"/payroll?employee_id=" + params.row.id}>
+                <IconButton sx={{ ml: '0.3rem' }} color="info" title="View Payroll">
+                    <FindReplaceIcon />
+                </IconButton>
+            </Link>
             <Link href={"/employee-balance-log?employee=" + params.row.id}>
-            <IconButton sx={{ ml: '0.3rem' }} color="primary">
+            <IconButton sx={{ ml: '0.3rem' }} color="primary" title="Balance Log">
                     <PrintIcon />
                 </IconButton>
             </Link>
                 
-                <IconButton sx={{ ml: '0.3rem' }} color="error" onClick={() => handleRowClick(params.row, "delete_employee")}>
+                <IconButton sx={{ ml: '0.3rem' }} color="error" onClick={() => handleRowClick(params.row, "delete_employee")} title="Delete">
                     <DeleteIcon />
                 </IconButton>
             </>
@@ -134,6 +169,30 @@ export default function Employee({ employees, stores, }) {
     const [salaryModalOpen, setSalaryModalOpen] = useState(false)
     const [balanceModalOpen, setBalanceModalOpen] = useState(false)
     const [selectedEmployee, setSelectedEmployee] = useState(0)
+
+    // Debug: Log employee data to check if payroll fields are present
+    useEffect(() => {
+        console.log('%c🔍 EMPLOYEE PAYROLL DATA DEBUG', 'background: #2196F3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
+        console.log('Data Structure:', {
+            hasData: !!dataEmployees,
+            hasDataArray: !!dataEmployees?.data,
+            dataLength: dataEmployees?.data?.length || 0,
+        });
+        
+        if (dataEmployees?.data?.length > 0) {
+            const first = dataEmployees.data[0];
+            console.log('%c📊 First Employee Data', 'background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px;', first);
+            console.log('%c💰 Payroll Fields', 'background: #FF9800; color: white; padding: 2px 6px; border-radius: 3px;', {
+                salary_records_count: first.salary_records_count ?? 'MISSING',
+                total_salary_paid: first.total_salary_paid ?? 'MISSING',
+                last_salary_date: first.last_salary_date ?? 'MISSING',
+                last_salary_amount: first.last_salary_amount ?? 'MISSING',
+            });
+            console.log('All field names:', Object.keys(first));
+        } else {
+            console.warn('%c⚠️ No employee data found', 'background: #f44336; color: white; padding: 4px 8px; border-radius: 4px;');
+        }
+    }, [dataEmployees]);
 
     const [searchTerms, setSearchTerms] = useState({
         start_date: '',
@@ -296,7 +355,7 @@ export default function Employee({ employees, stores, }) {
                 sx={{ display: "grid", gridTemplateColumns: "1fr", height: "calc(100vh - 200px)", }}
             >
                 <DataGrid
-                    rows={dataEmployees?.data}
+                    rows={dataEmployees?.data || []}
                     columns={columns(handleRowClick)}
                     initialState={{
                         columns: {
@@ -306,10 +365,24 @@ export default function Employee({ employees, stores, }) {
                                 email: false,
                                 created_at: false,
                                 joined_at: false,
+                                // Explicitly show payroll columns
+                                salary_records_count: true,
+                                total_salary_paid: true,
+                                last_salary_date: true,
                             },
                         },
                     }}
                     hideFooter
+                    sx={{
+                        '& .MuiDataGrid-cell': {
+                            whiteSpace: 'normal',
+                            wordWrap: 'break-word',
+                        },
+                        width: '100%',
+                        overflowX: 'auto',
+                    }}
+                    autoHeight={false}
+                    disableColumnMenu={false}
                 />
             </Box>
             <Grid size={12} container justifyContent={"end"} spacing={2} alignItems={"center"}>
