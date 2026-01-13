@@ -1,50 +1,28 @@
 # ==============================================
 # Render platform configuration for StockFlowPOS
-# Native PHP buildpack version (No Docker)
+# Native PHP buildpack (No Docker)
 # ==============================================
-
 services:
-  # ==============================================
   # Web Service (Laravel Application)
-  # ==============================================
   - type: web
     name: stockflowpos-web
     region: oregon
     plan: starter
     buildCommand: |
-      # Install PHP dependencies
       composer install --no-dev --optimize-autoloader --no-interaction
-
-      # Install Node.js dependencies
       npm ci --only=production
-
-      # Build frontend assets
       npm run build
-
-      # Generate application key if not set
       php artisan key:generate --force || true
-
-      # Cache Laravel configuration
       php artisan config:cache
       php artisan route:cache
       php artisan view:cache
-
-      # Optimize for production
       php artisan optimize
-
     startCommand: |
-      # Create necessary directories
       mkdir -p storage/logs storage/framework/{sessions,views,cache} bootstrap/cache
-
-      # Set proper permissions
       chmod -R 775 storage bootstrap/cache || true
-
-      # Start the application
       php artisan serve --host=0.0.0.0 --port=$PORT
-
     healthCheckPath: /health
     autoDeploy: true
-
     envVars:
       - key: APP_ENV
         value: production
@@ -70,11 +48,8 @@ services:
         value: public
       - key: DB_CONNECTION
         value: mysql
-      # Note: Database credentials will be injected automatically if using 'fromDatabase' (see below)
 
-  # ==============================================
   # Background Worker (Queue Processing)
-  # ==============================================
   - type: worker
     name: stockflowpos-worker
     region: oregon
@@ -84,7 +59,6 @@ services:
       npm ci --only=production
     startCommand: |
       php artisan queue:work --tries=3 --timeout=300 --sleep=3
-
     envVars:
       - key: APP_ENV
         value: production
@@ -93,9 +67,7 @@ services:
       - key: DB_CONNECTION
         value: mysql
 
-# ==============================================
 # MySQL Database Service
-# ==============================================
 databases:
   - name: stockflowpos-db
     databaseName: stockflowpos
