@@ -39,6 +39,15 @@ use App\Http\Controllers\SyncController;
 // Installer routes (must be before auth routes)
 require __DIR__ . '/installer.php';
 
+// Health check endpoint for Render
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'service' => 'StockFlowPOS'
+    ]);
+});
+
 Route::get('/', function () {
     return redirect('login');
 })->middleware('check.installed');
