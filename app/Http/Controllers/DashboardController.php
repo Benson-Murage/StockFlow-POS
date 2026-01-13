@@ -70,14 +70,19 @@ class DashboardController extends Controller
             ->where('product_stocks.quantity', '<=', 0)
             ->count();
 
-        //Sales chart
-        $totalSaleAmount = Sale::selectRaw('date(sale_date) as date, SUM(total_amount) as sale, 0 as cash')
+        //Sales chart - Apply store filter
+        $store_id = session('store_id', Auth::user()->store_id);
+        $isAdmin = Auth::user()->user_role === 'admin' || Auth::user()->user_role === 'super-admin';
+
+        $totalSaleAmount = Sale::selectRaw('date(sale_date) as date, SUM(total_amount) as sale, 0 as cash, SUM(profit_amount) as profit')
             ->whereBetween('sale_date', [now()->startOfMonth()->subMonths(3), now()])
+            ->when(!$isAdmin, fn($q) => $q->where('store_id', $store_id))
             ->groupBy('date');
 
-        $totalPayments = Transaction::selectRaw('date(transaction_date) as date, 0 as sale, SUM(amount) as cash')
+        $totalPayments = Transaction::selectRaw('date(transaction_date) as date, 0 as sale, SUM(amount) as cash, 0 as profit')
             ->whereBetween('transaction_date', [now()->startOfMonth()->subMonths(3), now()])
             ->where('payment_method', 'Cash')
+            ->when(!$isAdmin, fn($q) => $q->where('store_id', $store_id))
             ->groupBy('date');
 
         $saleChart =  $totalSaleAmount->unionAll($totalPayments)
@@ -89,6 +94,7 @@ class DashboardController extends Controller
                     'date' => $group->first()->date,
                     'sale' => $group->whereNotNull('sale')->sum('sale'),
                     'cash' => $group->whereNotNull('cash')->sum('cash'),
+                    'profit' => $group->whereNotNull('profit')->sum('profit'),
                 ];
             })->values()->toArray();
         //Sales chart end
@@ -114,13 +120,79 @@ class DashboardController extends Controller
     {
         $startDate = $request->start_date;
         $endDate = $request->end_date;
+        $store_id = session('store_id', Auth::user()->store_id);
 
-        $data['inventory_purchase'] = InventoryTransaction::where('transaction_type', 'purchase')->whereBetween('transaction_date', [$startDate, $endDate])->sum('total');
-        $data['total_sales'] = Sale::whereBetween('sale_date', [$startDate, $endDate])->sum('total_amount');
-        $data['cash_in'] = Transaction::where('payment_method', 'cash')->whereBetween('transaction_date', [$startDate, $endDate])->sum('amount');
-        $data['expenses'] = Expense::whereBetween('expense_date', [$startDate, $endDate])->sum('amount');
-        $data['salary_expense'] = SalaryRecord::DateFilter($startDate, $endDate)->sum('net_salary');
+        // Apply store filter if user is not admin
+        $storeFilter = function($query) use ($store_id) {
+            if (Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin') {
+                $query->where('store_id', $store_id);
+            }
+        };
+
+        // Basic metrics
+        $data['inventory_purchase'] = InventoryTransaction::where('transaction_type', 'purchase')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('total');
+
+        $data['total_sales'] = Sale::whereBetween('sale_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('total_amount');
+
+        $data['cash_in'] = Transaction::where('payment_method', 'cash')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('amount');
+
+        $data['expenses'] = Expense::whereBetween('expense_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('amount');
+
+        $data['salary_expense'] = SalaryRecord::DateFilter($startDate, $endDate)
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('net_salary');
+
         $data['expenses'] += $data['salary_expense'];
+
+        // Enhanced metrics
+        $data['total_profit'] = Sale::whereBetween('sale_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->sum('profit_amount');
+
+        $data['total_transactions'] = Transaction::whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->count();
+
+        $data['total_sales_count'] = Sale::whereBetween('sale_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->count();
+
+        // Payment method breakdown
+        $data['payment_methods'] = Transaction::select('payment_method', DB::raw('SUM(amount) as total'))
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($store_id && Auth::user()->user_role !== 'admin' && Auth::user()->user_role !== 'super-admin', 
+                fn($q) => $q->where('store_id', $store_id))
+            ->groupBy('payment_method')
+            ->get()
+            ->pluck('total', 'payment_method')
+            ->toArray();
+
+        // Net cash flow
+        $data['net_cash_flow'] = $data['cash_in'] - $data['expenses'];
+
+        // Average sale amount
+        $data['average_sale'] = $data['total_sales_count'] > 0 
+            ? $data['total_sales'] / $data['total_sales_count'] 
+            : 0;
+
         return response()->json([
             'summary' => $data,
         ], 200);

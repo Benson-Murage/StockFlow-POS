@@ -24,4 +24,28 @@ class CashLog extends Model
         'store_id',
         'created_by',
     ];
+
+    /**
+     * Get the contact (customer/vendor) for this cash log
+     */
+    public function contact()
+    {
+        return $this->belongsTo(Contact::class, 'contact_id');
+    }
+
+    /**
+     * Get the store for this cash log
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
+
+    /**
+     * Get the user who created this cash log
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

@@ -30,4 +30,44 @@ class Store extends Model
 
         return $query->where('id', Auth::user()->store_id);
     }
+
+    /**
+     * Get all sales for this store
+     */
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'store_id');
+    }
+
+    /**
+     * Get all purchases for this store
+     */
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class, 'store_id');
+    }
+
+    /**
+     * Get all employees for this store
+     */
+    public function employees()
+    {
+        return $this->hasMany(Employee::class, 'store_id');
+    }
+
+    /**
+     * Get all expenses for this store
+     */
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class, 'store_id');
+    }
+
+    /**
+     * Get all product stocks for this store
+     */
+    public function productStocks()
+    {
+        return $this->hasMany(ProductStock::class, 'store_id');
+    }
 }

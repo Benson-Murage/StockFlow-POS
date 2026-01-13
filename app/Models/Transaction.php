@@ -86,4 +86,20 @@ class Transaction extends Model
         }
         return $query;
     }
+
+    /**
+     * Get the contact (customer) for this transaction
+     */
+    public function contact()
+    {
+        return $this->belongsTo(Contact::class, 'contact_id');
+    }
+
+    /**
+     * Get the store for this transaction
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
 }

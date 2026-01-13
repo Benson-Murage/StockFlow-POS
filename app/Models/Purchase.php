@@ -32,4 +32,27 @@ class Purchase extends Model
         return $this->hasMany(PurchaseTransaction::class, 'purchase_id');
     }
 
+    /**
+     * Get the vendor (contact) for this purchase
+     */
+    public function vendor()
+    {
+        return $this->belongsTo(Contact::class, 'contact_id');
+    }
+
+    /**
+     * Get the store for this purchase
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
+
+    /**
+     * Get all purchase items
+     */
+    public function items()
+    {
+        return $this->hasMany(PurchaseItem::class, 'purchase_id');
+    }
 }

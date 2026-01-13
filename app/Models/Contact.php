@@ -60,4 +60,44 @@ class Contact extends Model
     public function quotations() {
         return $this->hasMany(Quotation::class);
     }
+
+    /**
+     * Get all sales for this contact (customer)
+     */
+    public function sales()
+    {
+        return $this->hasMany(Sale::class, 'contact_id');
+    }
+
+    /**
+     * Get all purchases for this contact (vendor)
+     */
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class, 'contact_id');
+    }
+
+    /**
+     * Get all transactions for this contact
+     */
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class, 'contact_id');
+    }
+
+    /**
+     * Get total sales amount for this customer
+     */
+    public function getTotalSalesAttribute()
+    {
+        return $this->sales()->sum('total_amount');
+    }
+
+    /**
+     * Get total purchases amount for this vendor
+     */
+    public function getTotalPurchasesAttribute()
+    {
+        return $this->purchases()->sum('total_amount');
+    }
 }

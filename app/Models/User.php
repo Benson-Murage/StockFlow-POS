@@ -55,4 +55,12 @@ class User extends Authenticatable
 
     const ROLE_ADMIN = 'admin';
     const ROLE_USER = 'user';
+
+    /**
+     * Get the store for this user
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
 }

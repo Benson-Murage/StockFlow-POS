@@ -135,7 +135,11 @@ const columns = (handleRowClick) => [
         field: "last_salary_date",
         headerName: "Last Payment",
         width: 150,
-        renderCell: (params) => params.value ? dayjs(params.value).format("YYYY-MM-DD") : "Never",
+        renderCell: (params) => {
+            const value = params.value;
+            if (!value) return <span style={{ color: '#999', fontStyle: 'italic' }}>Never</span>;
+            return dayjs(value).format("YYYY-MM-DD");
+        },
     },
     {
         field: 'action',
@@ -352,7 +356,13 @@ export default function Employee({ employees, stores, }) {
 
             <Box
                 className="py-6 w-full"
-                sx={{ display: "grid", gridTemplateColumns: "1fr", height: "calc(100vh - 200px)", }}
+                sx={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "1fr", 
+                    height: "calc(100vh - 200px)",
+                    overflowX: 'auto',
+                    width: '100%',
+                }}
             >
                 <DataGrid
                     rows={dataEmployees?.data || []}
@@ -379,10 +389,12 @@ export default function Employee({ employees, stores, }) {
                             wordWrap: 'break-word',
                         },
                         width: '100%',
-                        overflowX: 'auto',
+                        minWidth: '1400px', // Ensure enough width for all columns
                     }}
                     autoHeight={false}
                     disableColumnMenu={false}
+                    columnHeaderHeight={56}
+                    rowHeight={52}
                 />
             </Box>
             <Grid size={12} container justifyContent={"end"} spacing={2} alignItems={"center"}>

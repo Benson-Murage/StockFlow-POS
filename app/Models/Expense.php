@@ -81,4 +81,11 @@ class Expense extends Model
         return $query;
     }
 
+    /**
+     * Get the store for this expense
+     */
+    public function store()
+    {
+        return $this->belongsTo(Store::class, 'store_id');
+    }
 }

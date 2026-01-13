@@ -63,7 +63,9 @@ class SaleItem extends Model
     public function scopeStoreId($query, $storeId)
     {
         if ($storeId !== 'All' && $storeId !== 0) {
-            return $query->where('store_id', $storeId);
+            return $query->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+                ->where('sales.store_id', $storeId)
+                ->select('sale_items.*');
         }
         return $query;
     }

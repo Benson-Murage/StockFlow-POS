@@ -522,6 +522,26 @@ class ReportController extends Controller
         $report['mpesa_refund'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['MPesa', 'Mpesa', 'mpesa'])->where('amount', '<', 0)->sum('amount');
         $report['salary_expense'] = SalaryRecord::StoreId($store_id)->DateFilter($start_date, $end_date)->sum('net_salary');
         $report['total_expenses'] += $report['salary_expense'];
+
+        // Enhanced metrics
+        $report['card_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['Card', 'card'])->where('amount', '>=', 0)->sum('amount');
+        $report['cheque_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['Cheque', 'cheque'])->where('amount', '>=', 0)->sum('amount');
+        $report['credit_sale'] = Transaction::StoreId($store_id)->DateFilter($start_date, $end_date)->whereIn('payment_method', ['Credit', 'credit'])->where('amount', '>=', 0)->sum('amount');
+        
+        // Total payments received
+        $report['total_payments'] = $report['cash_sale'] + $report['mpesa_sale'] + $report['card_sale'] + $report['cheque_sale'] + $report['credit_sale'];
+        
+        // Net profit after expenses
+        $report['net_profit'] = ($report['total_profit'] ?? 0) - $report['total_expenses'];
+        
+        // Sales count
+        $report['sales_count'] = Sale::StoreId($store_id)->DateFilter($start_date, $end_date)->count();
+        
+        // Average sale amount
+        $report['average_sale'] = $report['sales_count'] > 0 ? ($report['total_sales'] / $report['sales_count']) : 0;
+        
+        // Outstanding balance (sales not fully paid)
+        $report['outstanding_balance'] = ($report['total_sales'] ?? 0) - ($report['total_received'] ?? 0);
         return Inertia::render('Report/SummaryReport', [
             'pageLabel' => 'Summary Report',
             'stores' => $stores,
