@@ -29,7 +29,12 @@ class DashboardController extends Controller
 
         $settings = Setting::whereIn('meta_key', ['shop_logo', 'misc_settings'])->get();
         $settingArray = $settings->pluck('meta_value', 'meta_key')->all();
-        $settingArray['shop_logo'] = $imageUrl . $settingArray['shop_logo'];
+        $logoPath = $settingArray['shop_logo'] ?? 'StockFlowPOS-logo.png';
+        $fullLogoPath = public_path($imageUrl . $logoPath);
+        if (!file_exists($fullLogoPath)) {
+            $logoPath = 'StockFlowPOS-logo.png';
+        }
+        $settingArray['shop_logo'] = $imageUrl . $logoPath;
         $store_id = session('store_id', Auth::user()->store_id);
         $store_name = Store::where('id', $store_id)->value('name');
 

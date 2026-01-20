@@ -4,7 +4,8 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import { Box, Grid, IconButton, TextField, FormControlLabel, Checkbox } from "@mui/material";
+import { Box, IconButton, TextField, FormControlLabel, Checkbox } from "@mui/material";
+import Grid from "@mui/material/Grid";
 import CloseIcon from "@mui/icons-material/Close";
 import PrintReceiptModal from "@/Components/PrintReceiptModal";
 import PercentIcon from '@mui/icons-material/Percent';
@@ -18,13 +19,10 @@ import { useState, useEffect, useContext } from 'react';
 
 import { useSales as useCart } from '@/Context/SalesContext';
 import { SharedContext } from "@/Context/SharedContext";
-import { useCurrencyFormatter, toNumeric } from "@/lib/currencyFormatter";
-import { useCurrencyStore } from "@/stores/currencyStore";
-
-console.log('MpesaCheckoutDialog component loaded');
+import { useCurrencyFormatter, useCurrencySymbol, toNumeric } from "@/lib/currencyFormatter";
 export default function MpesaCheckoutDialog({ disabled }) {
     const formatCurrency = useCurrencyFormatter();
-    const currencySymbol = useCurrencyStore((state) => state.settings.currency_symbol);
+    const currencySymbol = useCurrencySymbol();
     const return_sale = usePage().props.return_sale;
     const return_sale_id = usePage().props.sale_id;
     const edit_sale = usePage().props.edit_sale;
@@ -34,6 +32,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
     const { selectedCustomer, saleDate, saleTime } = useContext(SharedContext);
     const [loading, setLoading] = useState(false);
 
+    const [open, setOpen] = useState(false);
     const [showPrintModal, setShowPrintModal] = useState(false);
     const [receiptData, setReceiptData] = useState(null);
     const autoOpenPrintSetting = usePage().props.settings?.auto_open_print_dialog ?? '1';
@@ -80,8 +79,6 @@ export default function MpesaCheckoutDialog({ disabled }) {
     const mpesaEnabled = usePage().props.mpesa_enabled ?? false;
     const mpesaEnvConfigured = usePage().props.mpesa_env_configured ?? false;
     const isMpesaAvailable = mpesaEnabled && mpesaEnvConfigured;
-
-    const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
         if (!isMpesaAvailable) {
@@ -209,11 +206,14 @@ export default function MpesaCheckoutDialog({ disabled }) {
     }
 
     // Debug logging
-    console.log('MpesaCheckoutDialog rendering', { mpesaEnabled, mpesaEnvConfigured, isMpesaAvailable, disabled });
+    if (import.meta.env.DEV) {
+        console.log('MpesaCheckoutDialog rendering', { mpesaEnabled, mpesaEnvConfigured, isMpesaAvailable, disabled });
+    }
 
     return (
-        <Grid size={12}>
-            <Button
+        <Grid container>
+            <Grid item xs={12}>
+                <Button
                 variant="contained"
                 color={isMpesaAvailable ? "primary" : "warning"}
                 sx={{
@@ -322,8 +322,8 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         }}
                     />
 
-                    <Grid container spacing={{ xs: 2, md: 1 }} mb={3}>
-                        <Grid size={{ xs: 12, sm: 6 }}>
+                    <Grid container spacing={{ xs: 2, md: 1 }} style={{ marginBottom: '1.5rem' }}>
+                        <Grid item xs={12} sm={6}>
                             <TextField
                                 fullWidth
                                 label="Payable Amount"
@@ -340,7 +340,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                                 }}
                             />
                         </Grid>
-                        <Grid size={{ xs: 12, sm: 6}}>
+                        <Grid item xs={12} sm={6}>
                             <TextField
                                 fullWidth
                                 label="Amount"
@@ -381,7 +381,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                         }}
                     />
 
-                    <Grid container size={12} sx={{ mb: "1rem" }}>
+                    <Grid container style={{ marginBottom: '1rem' }}>
                         <FormControlLabel
                             control={<Checkbox checked={openPrintDialog} onChange={(e) => setOpenPrintDialog(e.target.checked)} name="open_print_dialog" />}
                             label="Open Print Dialog"
@@ -409,6 +409,7 @@ export default function MpesaCheckoutDialog({ disabled }) {
                 }}
                 receiptData={receiptData}
             />
+            </Grid>
         </Grid>
     );
 }

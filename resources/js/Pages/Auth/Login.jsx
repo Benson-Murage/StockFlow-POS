@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import Checkbox from '@mui/material/Checkbox';
 import GuestLayout from '@/Layouts/GuestLayout';
 import InputError from '@/Components/InputError';
@@ -17,11 +18,21 @@ export default function Login({ status, canResetPassword, version }) {
         remember: false,
     });
 
+    const [submitted, setSubmitted] = useState(false);
+
     const submit = (e) => {
         e.preventDefault();
 
+        if (submitted || processing) return;
+
+        setSubmitted(true);
+
         post(route('login'), {
-            onFinish: () => reset('password'),
+            onFinish: () => {
+                reset('password');
+                setSubmitted(false);
+            },
+            onError: () => setSubmitted(false),
         });
     };
 

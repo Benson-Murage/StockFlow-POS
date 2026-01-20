@@ -16,6 +16,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import HomeIcon from "@mui/icons-material/Home";
 import { Button } from "@mui/material";
+import axios from "axios";
 
 import ProductItem from "./Partial/ProductItem";
 import CartItems from "./Partial/CartItem";

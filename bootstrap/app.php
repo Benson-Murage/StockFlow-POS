@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             '/api/*',
             '/install/*',
             '/automation/backup/run',
+            '/dashboard/summary',
+            '/dashboard/sold-items-summary',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

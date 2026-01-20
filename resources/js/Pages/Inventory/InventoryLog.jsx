@@ -65,19 +65,24 @@ const columns = (handleRowClick) => [
 const InventoryLog = ({ inventory_log, stores }) => {
     const [dataInventoryLog, setDataInventoryLog] = useState(inventory_log);
     const [selectedInventoryItem, setSelectedInventoryItem] = useState({});
-    const [searchTerms, setSearchTerms] = useState({});
+    const [searchTerms, setSearchTerms] = useState({ per_page: 50 });
+    const [searchQuery, setSearchQuery] = useState('');
 
     const refreshInventoryItems = (url) => {
         const options = {
-            preserveState: true, // Preserves the current component's state
-            preserveScroll: true, // Preserves the current scroll position
-            only: ["inventory_items"], // Only reload specified properties
+            preserveState: true,
+            preserveScroll: true,
+            only: ["inventory_log"],
             onSuccess: (response) => {
                 setDataInventoryLog(response.props.inventory_log);
             },
         };
-        router.get(url, searchTerms, options);
+        router.get(url || window.location.pathname, searchTerms, options);
     };
+
+    useEffect(() => {
+        refreshInventoryItems(window.location.pathname);
+    }, [searchTerms]);
 
     const handleRowClick = (inventory_item, action) => {
         if (action === 'delete_inventory_item') {
@@ -140,6 +145,8 @@ const InventoryLog = ({ inventory_log, stores }) => {
                         label="Search..."
                         name="search_query"
                         placeholder="Start typing..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         fullWidth
                     />
                 </Grid>
@@ -149,7 +156,10 @@ const InventoryLog = ({ inventory_log, stores }) => {
                         sx={{ height: "100%" }}
                         size="large"
                         fullWidth
-
+                        onClick={() => {
+                            const newSearchTerms = { ...searchTerms, search_query: searchQuery, per_page: 50 };
+                            setSearchTerms(newSearchTerms);
+                        }}
                     >
                         <FindReplaceIcon />
                     </Button>
@@ -175,10 +185,11 @@ const InventoryLog = ({ inventory_log, stores }) => {
             <Grid size={12} container justifyContent={"end"}>
                 {/* <Chip size="large" label={'Total:' + numeral(totalExpense).format('0,0')} color="primary" /> */}
                 <CustomPagination
-                    dataLinks={dataInventoryLog?.links}
                     refreshTable={refreshInventoryItems}
-                    dataLastPage={dataInventoryLog?.last_page}
-                ></CustomPagination>
+                    setSearchTerms={setSearchTerms}
+                    searchTerms={searchTerms}
+                    data={dataInventoryLog}
+                />
             </Grid>
         </AuthenticatedLayout>
     );

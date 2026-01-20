@@ -4,6 +4,7 @@ import {
     Card,
      Grid,
     TextField,
+    Skeleton,
 } from "@mui/material";
 
 import Table from '@mui/material/Table';
@@ -53,7 +54,27 @@ export default function Summaries() {
     }, [startDate, endDate]);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <Grid size={{ xs: 12, sm: 12, md: 12 }}>
+                <Card sx={{ height: "100%", padding: 2, display: 'flex', flexDirection: "column" }}>
+                    <Grid container spacing={2} size={12}>
+                        <Grid size={{ xs: 6, sm: 3, md: 2 }}>
+                            <Skeleton variant="rounded" height={56} />
+                        </Grid>
+                        <Grid size={{ xs: 6, sm: 3, md: 2 }}>
+                            <Skeleton variant="rounded" height={56} />
+                        </Grid>
+                    </Grid>
+                    <Grid container size={12} spacing={2} sx={{ mt: 1 }}>
+                        {[0, 1, 2].map((i) => (
+                            <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
+                                <Skeleton variant="rounded" height={260} />
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Card>
+            </Grid>
+        );
     }
 
     return (
@@ -110,12 +131,20 @@ export default function Summaries() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {topSoldItems.map((item) => (
-                                        <TableRow key={item.product_name}>
-                                            <TableCell component="th" scope="row">{item.product_name}</TableCell>
-                                            <TableCell align="right">{numeral(item.total_quantity).format('0,0')}</TableCell>
+                                    {topSoldItems.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} align="center" sx={{ color: "text.secondary" }}>
+                                                No data for selected date range
+                                            </TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : (
+                                        topSoldItems.map((item) => (
+                                            <TableRow key={item.product_name}>
+                                                <TableCell component="th" scope="row">{item.product_name}</TableCell>
+                                                <TableCell align="right">{numeral(item.total_quantity).format('0,0')}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>
@@ -130,12 +159,20 @@ export default function Summaries() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {topProfitItems.map((item) => (
-                                        <TableRow key={item.product_name}>
-                                            <TableCell component="th" scope="row">{item.product_name}</TableCell>
-                                            <TableCell align="right">{formatCurrency(item.total_profit)}</TableCell>
+                                    {topProfitItems.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} align="center" sx={{ color: "text.secondary" }}>
+                                                No data for selected date range
+                                            </TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : (
+                                        topProfitItems.map((item) => (
+                                            <TableRow key={item.product_name}>
+                                                <TableCell component="th" scope="row">{item.product_name}</TableCell>
+                                                <TableCell align="right">{formatCurrency(item.total_profit)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>
@@ -150,12 +187,20 @@ export default function Summaries() {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {topGrossItems.map((item) => (
-                                        <TableRow key={item.product_name}>
-                                            <TableCell component="th" scope="row">{item.product_name}</TableCell>
-                                            <TableCell align="right">{formatCurrency(item.total_gross)}</TableCell>
+                                    {topGrossItems.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={2} align="center" sx={{ color: "text.secondary" }}>
+                                                No data for selected date range
+                                            </TableCell>
                                         </TableRow>
-                                    ))}
+                                    ) : (
+                                        topGrossItems.map((item) => (
+                                            <TableRow key={item.product_name}>
+                                                <TableCell component="th" scope="row">{item.product_name}</TableCell>
+                                                <TableCell align="right">{formatCurrency(item.total_gross)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </TableContainer>

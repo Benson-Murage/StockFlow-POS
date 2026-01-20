@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select"
 import { usePage } from "@inertiajs/react"
+import { useCurrencyFormatter } from "@/lib/currencyFormatter"
 
 export const description = "An interactive area chart"
 
@@ -45,7 +46,8 @@ const chartConfig = {
 }
 
 export function SalesChart() {
-  const chartData = usePage().props.data.saleChart
+  const chartData = usePage().props.data.saleChart || []
+  const formatCurrency = useCurrencyFormatter()
 
   const [timeRange, setTimeRange] = React.useState("90d")
 
@@ -63,13 +65,46 @@ export function SalesChart() {
     return date >= startDate
   })
 
+  const rangeLabel =
+    timeRange === "7d" ? "Last 7 days" : timeRange === "30d" ? "Last 30 days" : "Last 3 months"
+
+  const totals = React.useMemo(() => {
+    return filteredData.reduce(
+      (acc, item) => {
+        acc.sale += Number(item.sale || 0)
+        acc.cash += Number(item.cash || 0)
+        acc.profit += Number(item.profit || 0)
+        return acc
+      },
+      { sale: 0, cash: 0, profit: 0 }
+    )
+  }, [filteredData])
+
+  if (!chartData || chartData.length === 0) {
+    return (
+      <Card className="pt-0 w-full h-full">
+        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+          <div className="grid flex-1 gap-1">
+            <CardTitle>SALES</CardTitle>
+            <CardDescription>
+              Showing total sales for the last 3 months
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6 flex items-center justify-center h-[250px]">
+          <p className="text-muted-foreground">No data available</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="pt-0 w-full h-full">
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1">
           <CardTitle>SALES</CardTitle>
           <CardDescription>
-            Showing total sales for the last 3 months
+            {rangeLabel} • Total {formatCurrency(totals.sale)}
           </CardDescription>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
@@ -95,7 +130,7 @@ export function SalesChart() {
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[250px] w-full"
+          className="aspect-auto h-[250px] w-full min-h-[200px] min-w-[300px]"
         >
           <AreaChart data={filteredData}>
             <defs>
@@ -167,6 +202,17 @@ export function SalesChart() {
                       month: "short",
                       day: "numeric",
                     })
+                  }}
+                  formatter={(value, name) => {
+                    // Keep the same label, but render amounts as currency
+                    return (
+                      <div className="flex w-full justify-between gap-6">
+                        <span className="text-muted-foreground">{name}</span>
+                        <span className="font-mono font-medium tabular-nums text-foreground">
+                          {formatCurrency(Number(value || 0))}
+                        </span>
+                      </div>
+                    )
                   }}
                   indicator="dot"
                 />

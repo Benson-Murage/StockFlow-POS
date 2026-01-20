@@ -30,8 +30,7 @@ import Swal from "sweetalert2";
 import { usePage } from "@inertiajs/react";
 import { X } from "lucide-react";
 import React, { useState, useEffect, useContext, useMemo } from 'react';
-import { useCurrencyFormatter, toNumeric } from "@/lib/currencyFormatter";
-import { useCurrencyStore } from "@/stores/currencyStore";
+import { useCurrencyFormatter, useCurrencySymbol, toNumeric } from "@/lib/currencyFormatter";
 
 export default function PaymentsCheckoutDialog({
     useCart,
@@ -42,7 +41,7 @@ export default function PaymentsCheckoutDialog({
     is_sale = false,
 }) {
     const formatCurrency = useCurrencyFormatter();
-    const currencySymbol = useCurrencyStore((state) => state.settings.currency_symbol);
+    const currencySymbol = useCurrencySymbol();
     const { cartState, cartTotal, emptyCart, totalProfit, charges, totalChargeAmount, finalTotal, discount, setDiscount: setContextDiscount, calculateChargesWithDiscount } = useCart();
     const return_sale = usePage().props.return_sale;
     const return_sale_id = usePage().props.sale_id;

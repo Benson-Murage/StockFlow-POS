@@ -139,3 +139,12 @@ export const useCurrencyFormatter = () => {
         return formatCurrency(amount, storeSettings, includeCurrencySymbol);
     };
 };
+
+/**
+ * React hook to get currency symbol from store
+ * @returns {string} - Currency symbol
+ */
+export const useCurrencySymbol = () => {
+    const storeSettings = useCurrencyStore((state) => state.settings);
+    return storeSettings.currency_symbol || 'KSh';
+};

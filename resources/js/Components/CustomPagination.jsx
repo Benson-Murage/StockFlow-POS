@@ -20,6 +20,15 @@ const CustomPagination = ({ refreshTable, setSearchTerms, searchTerms, data }) =
     const rowsPerPageOptions = [50, 100, 200, 500, 1000];
     const rowsPerPage = searchTerms?.per_page || 50;
 
+    // Provide default values for data if undefined
+    const safeData = data || {
+        from: 0,
+        to: 0,
+        total: 0,
+        prev_page_url: null,
+        next_page_url: null,
+    };
+
     return (
         <>
             <div className="flex items-center justify-end gap-2">
@@ -49,7 +58,7 @@ const CustomPagination = ({ refreshTable, setSearchTerms, searchTerms, data }) =
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground whitespace-nowrap">
-                        {data.from || 0}-{data.to || 0} of {data.total || 0}
+                        {safeData.from || 0}-{safeData.to || 0} of {safeData.total || 0}
                     </span>
                     <Pagination>
                         <PaginationContent>
@@ -59,8 +68,8 @@ const CustomPagination = ({ refreshTable, setSearchTerms, searchTerms, data }) =
                                     size="icon"
                                     variant="ghost"
                                     className="cursor-pointer"
-                                    disabled={!data.prev_page_url}
-                                    onClick={() => refreshTable(data.prev_page_url)}
+                                    disabled={!safeData.prev_page_url}
+                                    onClick={() => refreshTable(safeData.prev_page_url)}
                                 >
                                     <ChevronLeftIcon className="h-4 w-4" />
                                 </Button>
@@ -71,8 +80,8 @@ const CustomPagination = ({ refreshTable, setSearchTerms, searchTerms, data }) =
                                     size="icon"
                                     className="cursor-pointer"
                                     variant="ghost"
-                                    disabled={!data.next_page_url}
-                                    onClick={() => refreshTable(data.next_page_url)}
+                                    disabled={!safeData.next_page_url}
+                                    onClick={() => refreshTable(safeData.next_page_url)}
                                 >
                                     <ChevronRightIcon className="h-4 w-4" />
                                 </Button>

@@ -18,12 +18,11 @@ import { useState, useEffect, useContext } from 'react';
 
 import { useSales as useCart } from '@/Context/SalesContext';
 import { SharedContext } from "@/Context/SharedContext";
-import { useCurrencyFormatter, toNumeric } from "@/lib/currencyFormatter";
-import { useCurrencyStore } from "@/stores/currencyStore";
+import { useCurrencyFormatter, useCurrencySymbol, toNumeric } from "@/lib/currencyFormatter";
 
 export default function CashCheckoutDialog({ disabled }) {
     const formatCurrency = useCurrencyFormatter();
-    const currencySymbol = useCurrencyStore((state) => state.settings.currency_symbol);
+    const currencySymbol = useCurrencySymbol();
     const return_sale = usePage().props.return_sale;
     const return_sale_id = usePage().props.sale_id;
     const edit_sale = usePage().props.edit_sale;
@@ -55,6 +54,8 @@ export default function CashCheckoutDialog({ disabled }) {
         return () => clearTimeout(timeoutId);
     }, [charges, discount]); // Removed cartTotal to prevent frequent re-renders
 
+    const [open, setOpen] = React.useState(false);
+
     // Sync local discount with context only when dialog is closed
     useEffect(() => {
         if (!open) {
@@ -73,8 +74,6 @@ export default function CashCheckoutDialog({ disabled }) {
         const recalculatedChargeAmount = calculateChargesWithDiscount(newDiscount);
         setRecalculatedCharges(recalculatedChargeAmount);
     };
-
-    const [open, setOpen] = React.useState(false);
 
     const handleClickOpen = () => {
         console.log('Cash dialog opened, current amountReceived:', amountReceived);
@@ -145,7 +144,7 @@ export default function CashCheckoutDialog({ disabled }) {
                     timer: 2000,
                     timerProgressBar: true,
                 });
-                emptyCart() //Clear the cart from the Context API
+                emptyCartItemsOnly() //Clear the cart from the Context API
                 setAmountReceived('0')
                 // Don't reset context discount or note - let them persist for next transaction
                 if (openPrintDialog && resp.data.receipt) {

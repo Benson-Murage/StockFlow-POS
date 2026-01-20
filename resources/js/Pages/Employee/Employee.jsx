@@ -176,13 +176,15 @@ export default function Employee({ employees, stores, }) {
 
     // Debug: Log employee data to check if payroll fields are present
     useEffect(() => {
+        if (!import.meta.env.DEV) return;
+
         console.log('%c🔍 EMPLOYEE PAYROLL DATA DEBUG', 'background: #2196F3; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;');
         console.log('Data Structure:', {
             hasData: !!dataEmployees,
             hasDataArray: !!dataEmployees?.data,
             dataLength: dataEmployees?.data?.length || 0,
         });
-        
+
         if (dataEmployees?.data?.length > 0) {
             const first = dataEmployees.data[0];
             console.log('%c📊 First Employee Data', 'background: #4CAF50; color: white; padding: 2px 6px; border-radius: 3px;', first);

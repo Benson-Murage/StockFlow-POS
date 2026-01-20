@@ -232,14 +232,33 @@ class InventoryController extends Controller
         }
     }
 
-    public function inventoryLogs()
+    public function inventoryLogs(Request $request)
     {
         $stores = Store::all();
-        $inventory_log = InventoryTransactionItem::join('inventory_items', 'inventory_transaction_items.inventory_item_id', '=', 'inventory_items.id')
+        $query = InventoryTransactionItem::join('inventory_items', 'inventory_transaction_items.inventory_item_id', '=', 'inventory_items.id')
             ->join('inventory_transactions', 'inventory_transaction_items.inventory_transaction_id', '=', 'inventory_transactions.id')
-            ->select('inventory_transaction_items.*', 'inventory_items.name', 'inventory_items.unit_type', 'inventory_transactions.reason')
-            ->latest()
-            ->paginate(100);
+            ->select(
+                'inventory_transaction_items.id',
+                'inventory_transaction_items.quantity',
+                'inventory_transaction_items.transaction_date',
+                'inventory_transaction_items.created_at',
+                'inventory_items.name',
+                'inventory_items.unit_type',
+                'inventory_transactions.reason'
+            );
+
+        // Apply search filter
+        if ($request->has('search_query') && !empty($request->search_query)) {
+            $searchTerm = $request->search_query;
+            $query->where('inventory_items.name', 'like', "%{$searchTerm}%")
+                ->orWhere('inventory_transactions.reason', 'like', "%{$searchTerm}%");
+        }
+
+        $perPage = $request->input('per_page', 50);
+        $inventory_log = $query->latest('inventory_transaction_items.created_at')
+            ->paginate($perPage)
+            ->appends($request->query());
+
         return Inertia::render('Inventory/InventoryLog', [
             'stores' => $stores,
             'inventory_log' => $inventory_log,
